@@ -779,13 +779,7 @@ function send(){
   const m = {from: who, text};
   if (first.url){ m.url = first.url; m.domain = first.domain; m.linkTitle = first.title; const mm = text.match(URL_RE); m.rawUrl = mm ? mm[1].replace(/[).,!]+$/,'') : ''; }
   addMsg(m);
-  if (AI && !aiOff){
-    aiThink(who, text).catch(e => {
-      const code = e && e.code;
-      if (['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(code)){ aiOff = true; document.documentElement.classList.remove('ai'); }
-      think(who, text);
-    });
-  } else think(who, text);
+  smartThink(who, text).then(ok => { if (!ok) think(who, text); }, () => think(who, text));
 }
 
 /* ------------------------------------------------------------
@@ -1237,10 +1231,65 @@ Reply with ONLY this JSON object:
 {"replies":[{"from":"santa|elfie|rudolph|wallet","text":"..."}],"add":[{"title":"short item name","url":null,"tier":2,"verdict":"yes|maybe|no"}],"remove":["item id"],"update":[{"id":"item id","verdict":"yes|maybe|no","prio":3}],"nice":{"artin":0,"elsa":0},"pic":null}
 tier: 1 cheap … 4 very expensive. nice: small changes from -5 to 5 for manners, begging, rudeness, kindness. Use empty arrays when nothing applies.`;
 
-async function aiThink(who, text){
+/* ------------------------------------------------------------
+   Backup chain so the chat never fails:
+   Claude (inside claude.ai) → OVHcloud models (free, no key) → built-in brain,
+   whose chat lines come from LLM7 (free, no key) → the on-phone AI → canned lines.
+   Every step has a timeout; a step that is busy or broken rests for a bit.
+   ------------------------------------------------------------ */
+const OVH = 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1';
+const LLM7 = 'https://api.llm7.io/v1';
+const SMART_CHAIN = [
+  {id:'ovh-llama',   base:OVH, model:'Meta-Llama-3_3-70B-Instruct',         ms:9000},
+  {id:'ovh-mistral', base:OVH, model:'Mistral-Small-3.2-24B-Instruct-2506', ms:9000},
+  {id:'ovh-gptoss',  base:OVH, model:'gpt-oss-120b',                        ms:14000},
+];
+const TALK_CHAIN = [
+  {id:'llm7-default', base:LLM7, model:'default',                    ms:8000},
+  {id:'llm7-nemo',    base:LLM7, model:'mistral-Nemo-Instruct-2407', ms:8000},
+];
+const rest = {};                       // provider id -> time it may be used again
+let lastSource = 'built-in';
+const resting = p => (rest[p.id] || 0) > Date.now();
+const restFor = (p, ms) => { rest[p.id] = Date.now() + ms; };
+
+async function callChat(p, prompt, ms, wantJSON){
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+  try {
+    const r = await fetch(p.base + '/chat/completions', {
+      method:'POST', headers:{'Content-Type':'application/json'}, signal: ctl.signal,
+      body: JSON.stringify({model:p.model, messages:[{role:'user', content:prompt}], temperature:0.8, max_tokens: wantJSON ? 700 : 120,
+        ...(wantJSON ? {response_format:{type:'json_object'}} : {})}),
+    });
+    if (!r.ok) throw {status:r.status};
+    const j = await r.json();
+    return String((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '');
+  } finally { clearTimeout(t); }
+}
+function looseJSON(s){
+  if (s && typeof s === 'object') return s;
+  s = String(s || '').replace(/```(?:json)?/gi, '');
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a < 0 || b <= a) return null;
+  try { return JSON.parse(s.slice(a, b + 1)); } catch(e){ return null; }
+}
+const voiceOf = n => { n = String(n || '').toLowerCase(); return /santa/.test(n) ? 'santa' : /elf/.test(n) ? 'elfie' : /rudolph|deer/.test(n) ? 'rudolph' : /wallet/.test(n) ? 'wallet' : null; };
+/* turn whatever shape the model used into {replies, add, remove, update, nice, pic}, or null if unusable */
+function normalizeSmart(r){
+  if (!r || typeof r !== 'object') return null;
+  let reps = r.replies || r.messages || r.chat || r.responses;
+  if (!Array.isArray(reps) && typeof r.reply === 'string'){ const m = r.reply.match(/^\s*(\w[\w' ]*?)\s*:\s*(.+)$/s); reps = [{from: m ? m[1] : 'santa', text: m ? m[2] : r.reply}]; }
+  if (!Array.isArray(reps)) return null;
+  const replies = reps.map(x => x && typeof x === 'object' ? {from: voiceOf(x.from || x.sender || x.name || x.role), text: String(x.text || x.message || x.content || '').trim()} : null)
+    .filter(x => x && x.from && x.text && x.text.length < 400 && !BAD_WORDS.test(x.text)).slice(0, 4);
+  const pic = PICS.find(p => p.id === r.pic) || null;
+  if (!replies.length && !pic) return null;
+  return {replies, pic, add: Array.isArray(r.add) ? r.add : [], remove: Array.isArray(r.remove) ? r.remove : [], update: Array.isArray(r.update) ? r.update : [], nice: r.nice && typeof r.nice === 'object' ? r.nice : null};
+}
+function smartInput(who, text){
   const lists = S.items.map(x => ({id:x.id, who:x.who, title:x.title, verdict:x.verdict, prio:x.prio, tier:x.tier}));
-  const transcript = S.msgs.filter(m => m.from !== 'sys' && m.kind !== 'stage' && m.text).slice(-16).map(m => `${SHORT[m.from] || m.from}: ${m.text}`).join('\n');
-  const input = `${AI_RULES}
+  const transcript = S.msgs.filter(m => m.from !== 'sys' && m.kind !== 'stage' && m.text).slice(-16, -1).map(m => `${SHORT[m.from] || m.from}: ${m.text}`).join('\n');
+  return `${AI_RULES}
 
 Now: ${new Date().toLocaleString()} · ${daysLeft().replace(/^⏳ /,'')}
 Nice scores (0-100): Artin ${S.nice.artin}, Elsa ${S.nice.elsa}
@@ -1251,17 +1300,12 @@ ${transcript}
 
 The newest message is from ${NAME[who]}: ${JSON.stringify(text)}
 Reply to ${NAME[who]} now.`;
-  showTyping('santa');
-  let r;
-  try { r = await AI.json(input, {modelTier:'quick', cache:false}); }
-  finally { hideTyping(); }
-  if (!r || typeof r !== 'object' || !Array.isArray(r.replies)) throw {code:'invalid_json'};
-
+}
+function applySmart(r, who, text){
   const first = parseLine(text.split('\n')[0]);
-  const adds = Array.isArray(r.add) ? r.add.slice(0, 6) : [];
-  const added = [];
+  const adds = r.add.slice(0, 6), added = [];
   for (const a of adds){
-    const title = String(a.title || '').trim().slice(0, 80); if (!title) continue;
+    const title = String((a && (a.title || a.item || a.name)) || '').trim().slice(0, 80); if (!title) continue;
     const tier = Math.max(1, Math.min(4, +a.tier || 2));
     const verdict = ['yes','maybe','no'].includes(a.verdict) ? a.verdict : rollVerdict(tier);
     const url = a.url && /^https?:/.test(a.url) ? String(a.url) : (adds.length === 1 ? first.url : null);
@@ -1269,12 +1313,12 @@ Reply to ${NAME[who]} now.`;
     const item = {id:'i' + (++S.seq), who, title, url, domain, tier, verdict, prio:2, ts:Date.now()};
     S.items.push(item); added.push(item);
   }
-  for (const id of (Array.isArray(r.remove) ? r.remove : [])){
+  for (const id of r.remove){
     const it = S.items.find(x => x.id === String(id) && x.who === who);
     if (it){ S.items = S.items.filter(x => x !== it); addMsg({from:'sys', text:`🗑️ Removed '${it.title}' from ${NAME[who]}'s list`}); }
   }
-  for (const u of (Array.isArray(r.update) ? r.update : [])){
-    const it = S.items.find(x => x.id === String(u.id) && x.who === who); if (!it) continue;
+  for (const u of r.update){
+    const it = u && S.items.find(x => x.id === String(u.id) && x.who === who); if (!it) continue;
     if (['yes','maybe','no'].includes(u.verdict) && u.verdict !== it.verdict){ it.verdict = u.verdict; addMsg({from:'sys', text:`🔁 '${it.title}' is now ${V[it.verdict][0]} ${V[it.verdict][1]}`}); }
     if ([1,2,3].includes(+u.prio)) it.prio = +u.prio;
   }
@@ -1283,11 +1327,39 @@ Reply to ${NAME[who]} now.`;
   else if (added.length > 1) addMsg({from:'sys', text:`📋 ${added.length} wishes added to ${NAME[who]}'s list`});
   if (added.length){ const c = ctx(); c.lastItem = added[added.length-1].id; c.lastAt = Date.now(); c.lastWho = who; }
   save();
-  const replies = r.replies.filter(x => x && EMO[x.from] && x.text).slice(0, 4);
-  replies.forEach(x => bot(x.from, String(x.text).slice(0, 320)));
-  const pic = PICS.find(p => p.id === r.pic);
-  if (pic) bot('santa', pic.cap, {kind:'img', src:pic.src});
-  if (!replies.length && !pic) throw {code:'empty_completion'};
+  r.replies.forEach(x => bot(x.from, x.text.slice(0, 320)));
+  if (r.pic) bot('santa', r.pic.cap, {kind:'img', src:r.pic.src});
+}
+/* returns true if a smart model handled the message; false means "use the built-in brain" */
+async function smartThink(who, text){
+  const input = smartInput(who, text), deadline = Date.now() + 20000;
+  await q; showTyping('santa');
+  try {
+    if (AI && !aiOff){
+      try { const r = normalizeSmart(await AI.json(input, {modelTier:'quick', cache:false})); if (r){ hideTyping(); applySmart(r, who, text); lastSource = 'Claude'; return true; } }
+      catch(e){ if (['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(e && e.code)){ aiOff = true; document.documentElement.classList.remove('ai'); } }
+    }
+    if (navigator.onLine === false) return false;
+    // hedged: start the best model; if it hasn't answered after a few seconds, ask the next one too. First good answer wins.
+    const avail = SMART_CHAIN.filter(p => !resting(p));
+    if (!avail.length) return false;
+    const win = await new Promise(resolve => {
+      let pending = avail.length, done = false;
+      const finish = r => { if (!done){ done = true; clearTimeout(cap); resolve(r); } };
+      const cap = setTimeout(() => finish(null), Math.max(3000, deadline - Date.now()));
+      avail.forEach((p, i) => setTimeout(async () => {
+        if (!done){
+          try {
+            const r = normalizeSmart(looseJSON(await callChat(p, input, p.ms, true)));
+            if (r){ if (!done) lastSource = p.model; finish(r); } else if (!done) restFor(p, 20000);
+          } catch(e){ if (!done) restFor(p, e && e.status === 429 ? 60000 : 30000); }
+        }
+        if (--pending === 0) finish(null);
+      }, i * 4500));
+    });
+    if (!win) return false;
+    hideTyping(); applySmart(win, who, text); return true;
+  } finally { hideTyping(); }
 }
 
 /* ============================================================
@@ -1486,7 +1558,8 @@ function openInfo(){
   shBody.innerHTML = `<div class="bigav"><div class="stack">${avHTML('artin')}${avHTML('santa')}${avHTML('elsa')}</div><h2>🎄 Wishlist HQ</h2><div class="small">6 people · est. this Christmas</div></div>
     <div class="members">${members.map(k => `<div class="member">${avHTML(k)}<div><b>${NAME[k]}</b><span class="small">${KIDS.includes(k) ? `Nice score ${S.nice[k]}/100 · ${(c => c + (c === 1 ? ' wish' : ' wishes'))(S.items.filter(x => x.who === k).length)}` : ROLE[k]}</span></div></div>`).join('')}</div>
     <div class="members">
-      ${AI && !aiOff ? `<div class="toggle"><span>✨ Smart replies</span><span class="small">On (powered by Claude)</span></div>` : brainRow()}
+      <div class="toggle" style="flex-wrap:wrap"><span>✨ Smart replies</span><span class="small">On · last reply: ${esc(lastSource)}</span><p class="small" style="width:100%;margin:6px 0 0">${AI && !aiOff ? 'Claude → ' : ''}free cloud AI (OVHcloud, LLM7) → ${brain.state === 'ready' ? 'AI on this phone → ' : ''}built-in brain. If one is busy or offline, the next one answers.</p></div>
+      ${AI && !aiOff ? '' : brainRow()}
       <div class="toggle"><span>❄️ Snow</span><button class="sw ${S.snow ? 'on' : ''}" data-tog="snow" aria-label="Snow"></button></div>
       <div class="toggle"><span>🔄 Faces on the wrong people? Swap them</span><button class="sw ${S.swap ? 'on' : ''}" data-tog="swap" aria-label="Swap faces"></button></div>
     </div>
@@ -1656,19 +1729,34 @@ function cleanBrain(out, voice){
 }
 /* use the AI brain for conversation when it's ready; otherwise the canned lines */
 async function reply(who, text, fallback){
-  if (brain.state !== 'ready' || brain.busy){ talk(fallback, who); return; }
-  brain.busy = true;
-  await q; showTyping('santa');
-  try {
-    const voice = pickVoice(text);
-    const r = await brain.engine.chat.completions.create({
-      messages:[{role:'user', content: brainPrompt(who, text, voice)}], temperature: 0.8, top_p: 0.95, max_tokens: 70,
-    });
-    hideTyping();
-    const out = cleanBrain(r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content, voice);
-    if (out) bot(voice, out); else talk(fallback, who);
-  } catch(e){ hideTyping(); talk(fallback, who); }
-  finally { brain.busy = false; }
+  const voice = pickVoice(text);
+  if (navigator.onLine !== false){
+    for (const p of TALK_CHAIN){
+      if (resting(p)) continue;
+      await q; showTyping(voice);
+      try {
+        const out = cleanBrain(await callChat(p, brainPrompt(who, text, voice), p.ms, false), voice);
+        hideTyping();
+        if (out){ bot(voice, out); lastSource = p.model; return; }
+        restFor(p, 20000);
+      } catch(e){ hideTyping(); restFor(p, e && e.status === 429 ? 60000 : 30000); }
+    }
+  }
+  if (brain.state === 'ready' && !brain.busy){
+    brain.busy = true;
+    await q; showTyping(voice);
+    try {
+      const r = await brain.engine.chat.completions.create({
+        messages:[{role:'user', content: brainPrompt(who, text, voice)}], temperature: 0.8, top_p: 0.95, max_tokens: 70,
+      });
+      hideTyping();
+      const out = cleanBrain(r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content, voice);
+      if (out){ bot(voice, out); lastSource = 'on-phone AI'; return; }
+    } catch(e){ hideTyping(); }
+    finally { brain.busy = false; }
+  }
+  lastSource = 'built-in';
+  talk(fallback, who);
 }
 
 /* status bar + header badge */
