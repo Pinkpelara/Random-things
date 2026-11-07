@@ -127,6 +127,16 @@ header{
 .tb{position:absolute;top:-14px;display:flex;gap:1px;background:var(--them);border:2px solid var(--bg);border-radius:14px;padding:2px 5px;font-size:13px;z-index:3;line-height:1.2}
 .row.them .tb{right:-14px}
 .row.me .tb{left:-14px;background:var(--me2)}
+.imgb{display:block;align-self:flex-start;width:220px;padding:0;border-radius:18px;overflow:hidden;margin-bottom:3px;background:var(--them);-webkit-touch-callout:none}
+.imgb img{display:block;width:220px;height:275px;object-fit:cover}
+.imgb.broken{width:220px;height:120px;display:grid;place-items:center;font-size:14px;color:var(--muted)}
+.imgb.broken img{display:none}
+.imgb.broken::after{content:"📷 Santa's camera froze ❄️"}
+.lightbox{position:fixed;inset:0;z-index:95;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;animation:fade .2s}
+.lightbox img{max-width:100%;max-height:78vh;border-radius:14px}
+.lightbox p{color:#fff;margin:0;text-align:center;font-size:15px;max-width:340px}
+.lightbox small{color:#aaa;font-size:12px}
+@keyframes fade{from{opacity:0}}
 .pop{animation:pop .36s cubic-bezier(.2,1.4,.4,1)}
 @keyframes pop{from{transform:scale(.6) translateY(16px);opacity:0}to{transform:none;opacity:1}}
 .typing .bubble{display:flex;gap:4px;padding:12px 14px}
@@ -312,7 +322,9 @@ canvas#snow{position:absolute;inset:0;z-index:15;pointer-events:none}
     <button class="plus" id="plusBtn" aria-label="More">+</button>
     <div class="menu" id="menu">
       <button data-act="paste">🔗 <span>Paste a link</span></button>
+      <button data-act="pic">📸 <span>Ask Santa for a pic</span></button>
       <button data-act="idea">🎲 <span>Elfie, give me an idea</span></button>
+      <button data-act="tattle">🚨 <span>Tell on your sibling</span></button>
       <button data-act="lists">📋 <span>See the wishlists</span></button>
       <button data-act="share">📤 <span>Send lists to the parents</span></button>
     </div>
@@ -358,7 +370,7 @@ const store = {
   get(){ try { return JSON.parse(localStorage.getItem(LS)); } catch(e){ return null; } },
   set(v){ try { localStorage.setItem(LS, JSON.stringify(v)); } catch(e){} }
 };
-const fresh = () => ({v:1, seq:0, msgs:[], items:[], nice:{artin:50, elsa:50}, sender:'artin', snow:true, swap:false, pokes:{artin:0, elsa:0}});
+const fresh = () => ({v:1, seq:0, msgs:[], items:[], nice:{artin:50, elsa:50}, sender:'artin', snow:true, swap:false, pokes:{artin:0, elsa:0}, seenPics:[], complaints:0, v2:true});
 let S = Object.assign(fresh(), store.get() || {});
 const save = () => { if (S.msgs.length > 260) S.msgs = S.msgs.slice(-260); store.set(S); };
 
@@ -431,10 +443,22 @@ function avHTML(k, cls=''){
    {n}=sender, {o}=sibling, {i}=item
    ============================================================ */
 const CATS = [
+  {k:/labubu/, t:2, l:[['elfie',"Labubu?? that was LAST year. the elves have moved on. keep up 💅"],['santa',"Santa still has 4,000 Labubus in the warehouse from last year. You want one? Take ten. Please."],['rudolph',"the Labubu era is over. let it rest in peace 🪦"]]},
+  {k:/squish|nee ?doh|mochi|stress ball|smiski|sonny angel|jellycat|crumbl|\btrend|tiktok made me/, t:2, l:[
+    ['elfie',"squishies. last year it was Labubu. next year it'll be something we can't even imagine yet. the cycle continues 🔁"],
+    ['santa',"Santa will approve ONE squishy. Not thirty. Santa remembers the Labubu situation."],
+    ['rudolph',"where will it even go. the bedroom floor is already 80% clothes"],
+    ['elfie',"by February this joins the trend graveyard next to the Labubus 🪦"],
+    ['wallet',"the squishy budget has its own spreadsheet now 🥲"]]},
   {k:/\bcoal\b/, t:1, l:[['santa',"You... asked for coal. Saving Santa the paperwork. Efficient. Respect."],['rudolph',"reverse psychology. we see you, {n}."]]},
   {k:/world peace|\bhappiness\b|\bhealth\b|\bfamily\b|\blove\b/, t:1, l:[['santa',"Aww. That's lovely, {n}. Santa will try. Now what do you ACTUALLY want"],['elfie',"pageant answer detected 🏆 now tell us the real wish"]]},
   {k:/^(nothing|idk|i don'?t know|dunno|anything|whatever)\b/, t:1, l:[['elfie',"'{i}'. ok. so when you get nothing on Dec 25 you'll be totally fine with it? 🙂 thought so"],['santa',"'{i}' is not a gift, {n}. Santa needs SPECIFICS."]]},
   {k:/stanley cup|maple leafs|\bleafs\b|raptors|blue jays|\bjays\b|\bjersey\b|hockey|\bskates?\b|\bnhl\b/, t:2, l:[['santa',"A Leafs thing? Santa can deliver merch. A Leafs Stanley Cup is outside Santa's powers. Santa is magic, not a miracle worker. 🍁"],['rudolph',"go leafs go 🍁 (see you in disappointment in april)"]]},
+  {k:/basketball|\bnba\b|lebron|\bsteph\b|curry|kobe|wemby|giannis|\bhoops?\b|\bdunk|spalding|\bwilson\b|raptors/, t:2, l:[
+    ['santa',"Basketball! Santa played in college. Santa was the ball. 🏀"],
+    ['rudolph',"I can't dunk but I can fly. who's the real athlete here 🦌"],
+    ['elfie',"{n} is gonna practise in the driveway at 9pm in December. the neighbours are THRILLED"],
+    ['santa',"Approved-ish. But {n} has to pass the ball to {o} at least once. That's the deal. 🤝"]]},
   {k:/iphone|i phone|pixel \d|galaxy s\d|samsung (phone|galaxy)|new phone/, t:4, l:[['elfie',"a new phone. groundbreaking. never been done. truly the most original wish ever written 🙄"],['santa',"Which one, {n}? There are like 40 of them now. Santa still uses a flip phone."],['rudolph',"you literally have a phone in your hand in every photo ever taken of you"]]},
   {k:/apple ?watch|smart ?watch|\bwatch\b/, t:3, l:[['elfie',"so you can check the time... which is on your phone... which you hold 24/7"]]},
   {k:/airpods|headphones|earbuds|\bbeats\b|bose|sony wh|\bjbl\b|speaker/, t:3, l:[['elfie',"noise cancelling so you can ignore {o} in high definition. smart."],['santa',"Santa approves. Santa also knows Santa will now be ignored in high definition. Classic."]]},
@@ -509,6 +533,10 @@ const GENERIC_LINK = [
   ['rudolph',"thank you for the link. last year someone just wrote 'the blue thing'"],
 ];
 const WALLET = {3:["🥲","who told you about that","I'm a wallet, not a miracle","*sweats in leather*"], 4:["I'm going to go lie down","🫠🫠🫠","I'm literally made of receipts at this point","*Parents' Wallet has left the chat* ...jk I can't leave, I'm a wallet"]};
+const IDEAS_KID = {
+  artin:["a mini hoop for your bedroom door. {o} will love it (she will not)","a basketball signed by Santa (not worth any money, so you can't complain about the price)","a 'DO NOT DISTURB — GAME ON' sign","new basketball socks. cheap. approved. nobody can say 'why did u spend so much'"],
+  elsa:["an alarm clock on wheels that RUNS AWAY so you have to get up (real thing!)","a giant bin for the floor clothes. the floor would like to be seen again","a sunrise lamp so school mornings feel less like a punishment","ONE squishy. one. Santa is watching."],
+};
 const IDEAS = [
   "a 'KNOCK FIRST' sign for your door. aimed at {o}. obviously.",
   "noise-cancelling headphones. to mute {o}.",
@@ -524,10 +552,28 @@ const IDEAS = [
   "a framed photo of Santa. for 'good luck'. and nice points.",
 ];
 const POKE = {
-  artin:["i'm the favourite. it's documented.","this hair has its own wishlist","{o} touched my stuff","I'm basically a UofT student already","boing","why does my head do this","PS5 or riot"],
-  elsa:["I'm the favourite. ignore {o}.","these boots were a choice and I stand by it","the hoodie is a dress now. fashion.","Santa owes me from last year","I want everything. sorry not sorry","boing","stop poking me 😤"],
+  artin:["I wasn't bothering {o} (I was)","ball is life 🏀","why did u spend so much 😤","i'm the favourite. it's documented.","this hair has its own wishlist","{o} touched my stuff","I'm basically a UofT student already","boing","why does my head do this","PS5 or riot"],
+  elsa:["{o} STOP","I'll wake up early tomorrow (I won't)","my room is organized chaos","squishies are an investment","I'm the favourite. ignore {o}.","these boots were a choice and I stand by it","the hoodie is a dress now. fashion.","Santa owes me from last year","I want everything. sorry not sorry","boing","stop poking me 😤"],
 };
-const V = {yes:['✅','APPROVED','v-yes'], maybe:['🤔','PENDING','v-maybe'], no:['🚫','LOL NO','v-no']};
+const PICS = [
+  {id:'dunk', src:'https://cdn.gamma.app/577q2x36h3kacv8/design-anything/bNHBRlibaaS8SpodNiDg6/0LrLdvrPvG0MYbqYA0UeH.jpg', kid:'artin', cap:"me practising so I can finally beat Artin 1v1 🏀 (I did not make it)"},
+  {id:'squish', src:'https://cdn.gamma.app/577q2x36h3kacv8/design-anything/laH1yggb7CDlKGraQ6ARu/91doDjsYQbTK5BEzPQP_n.jpg', kid:'elsa', cap:"me in the warehouse after Elsa's squishy order came in 🫠"},
+  {id:'room', src:'https://cdn.gamma.app/577q2x36h3kacv8/design-anything/9ytMQimIDBAK5JKX25Yw7/Yaf6eFNaMv_WiOASPNV81.jpg', kid:'elsa', cap:"tried to drop off a present in Elsa's room. Santa is still looking for the floor."},
+  {id:'alarms', src:'https://cdn.gamma.app/577q2x36h3kacv8/design-anything/Njrt89FlA5BhK2D1uGb9Z/7l2f4jrPY-4M1o6e0KZGQ.jpg', kid:'elsa', cap:"me doing my best impression of Elsa on a school morning ⏰⏰⏰"},
+  {id:'nono', src:'https://cdn.gamma.app/577q2x36h3kacv8/design-anything/QQlTWBsRUnI7EEKrCIH7Q/MGoDJv5ICVuhRXhuXlRN2.jpg', kid:null, cap:"na na na nemikhad 😌"},
+];
+const NEMIKHAD = ["na na na... nemikhad. 🙅‍♂️","Santa has consulted your dad. The answer is: na na na nemikhad.","na na na nemikhad 😌 (Santa learned it from your dad)","Santa's official ruling: na na na nemikhad."];
+function santaPic(who){
+  S.seenPics = S.seenPics || [];
+  let pool = PICS.filter(p => !S.seenPics.includes(p.id));
+  if (!pool.length){ S.seenPics = []; pool = PICS.slice(); }
+  const mine = pool.filter(p => p.kid === who);
+  const p = mine.length && Math.random() < .6 ? rnd(mine) : rnd(pool);
+  S.seenPics.push(p.id); save();
+  bot('santa', rnd(["one sec, taking a selfie 📸","live from the North Pole:","exclusive from Santa's camera roll 👀","ok fine. here. don't post it."]));
+  bot('santa', p.cap, {kind:'img', src:p.src});
+}
+const V = {yes:['✅','APPROVED','v-yes'], maybe:['🤔','PENDING','v-maybe'], no:['🚫','NEMIKHAD','v-no']};
 const ODDS = {1:[85,15,0], 2:[60,30,10], 3:[35,45,20], 4:[12,40,48]};
 function rollVerdict(t){ const [a,b] = ODDS[t] || ODDS[2], r = Math.random()*100; return r < a ? 'yes' : r < a+b ? 'maybe' : 'no'; }
 
@@ -629,6 +675,7 @@ function renderChat(newId){
       inner = stageHTML();
     } else {
       const onlyUrl = m.url && m.text.trim().replace(/[).,!]+$/,'') === m.rawUrl;
+      if (m.kind === 'img') inner += `<button class="imgb" data-img="${esc(m.src)}" data-id="${m.id}" aria-label="Open photo"><img src="${esc(m.src)}" alt="Photo from Santa" width="220" height="275" loading="lazy" onerror="this.parentNode.classList.add('broken')"></button>`;
       if (!onlyUrl){
         const emo = isEmojiOnly(m.text);
         inner += `<div class="bubble${emo ? ' emoji' : ''}" data-id="${m.id}">${esc(m.text)}${tbHTML(m)}</div>`;
@@ -740,6 +787,29 @@ function think(who, text){
 
   // chit-chat, questions and other not-a-wish messages
   if (!hasUrl && lines.length === 1){
+    const words = text.split(/\s+/).length;
+    if (/\b(pics?|photos?|pictures?|selfies?|wyd|what are you doing|what r u doing|proof)\b/i.test(text) && (words <= 4 || /send|santa|show|see/i.test(text))){ santaPic(who); return; }
+    if (/nemikhad|na na na/i.test(text)){ bot('santa', "HEY. That's Santa's line. Your dad licensed it to Santa for the holidays. 😤"); return; }
+    if (who === 'elsa' && /artin/i.test(text) && /(annoying|stop|bother|leave|mean|touch|my room|ugh|hate|won'?t|keeps|always)/i.test(text)){
+      bump('artin', -2); S.complaints = (S.complaints || 0) + 1; save();
+      bot('santa', "Complaint received. Artin: -2 nice points. Artin, leave Elsa alone 😂");
+      bot('elfie', rnd([`that's complaint #${S.complaints} btw. the folder is getting thick 📁`, "Artin's lawyer (Artin) will respond shortly", "Santa believes you. Santa ALWAYS believes you."]));
+      return;
+    }
+    if (who === 'artin' && /elsa/i.test(text) && /(annoying|didn'?t do|started|fault|stop|lying|snitch|not me|wasn'?t me)/i.test(text)){
+      bot('santa', "Santa has heard both sides. Santa believes Elsa. Santa always believes Elsa. 🙂");
+      bot('elfie', "it's giving 'I didn't do anything' energy 😂");
+      return;
+    }
+    if (/(wake up|waking|alarm|snooze|tired|sleepy|early|school morning|\bschool\b)/i.test(text) && words <= 10){
+      bot('santa', who === 'elsa' ? "Santa heard about the school mornings, Elsa. Santa wakes up at 4am on Christmas Eve. You can do 7am. Probably. ⏰" : "Artin, Santa can confirm you're awake. Very awake. Santa can hear the basketball from the North Pole. 🏀");
+      if (who === 'elsa' && Math.random() < .5) santaPic(who);
+      return;
+    }
+    if (/(clean|messy|mess\b|my room)/i.test(text) && words <= 10){
+      bot('elfie', who === 'elsa' ? "the room. the legend. the mess. Santa sent an elf in last week. we haven't heard back 🫡" : "Artin's room: suspiciously ok. Santa is checking under the bed. 🔦");
+      return;
+    }
     for (const c of CHIT){
       if (c.k.test(text) && (c.any || text.split(/\s+/).length <= 5)){
         if (c.nice) bump(who, c.nice);
@@ -797,6 +867,26 @@ function think(who, text){
   const t = worst.a.tier;
   if (t >= 3 && Math.random() < (t === 4 ? .9 : .5) && !say.some(s => s[0] === 'wallet')) say.push(['wallet', rnd(WALLET[t])]);
 
+  // Santa uses Dad's line
+  const anyNo = added.some(x => x.item.verdict === 'no');
+  if (anyNo) say.unshift(Math.random() < .4 ? ['santa','__NONO__'] : ['santa', rnd(NEMIKHAD)]);
+  else if (t === 4 && Math.random() < .35) say.push(['santa', "Santa's first instinct was 'na na na nemikhad'... but Santa is thinking about it. 🤔"]);
+
+  // who's asking matters
+  if (who === 'artin' && t >= 3 && Math.random() < .7) say.push(rnd([
+    ['wallet',"watch. we buy it and {n} goes 'WHY DID YOU SPEND SO MUCH 😭'. every. single. year."],
+    ['santa',"Okay {n}, but if Santa gets this, you are NOT allowed to say 'why did u spend so much' on Christmas morning. Deal? 🤝"],
+    ['elfie',"{n} wants the expensive stuff but gets mad when anyone actually spends money. make it make sense 😂"],
+    ['rudolph',"prediction: {n} opens it, smiles for 2 seconds, then asks how much it cost 🧾"]]));
+  if (who === 'artin' && Math.random() < .15) say.push(['elfie', "unrelated but {o} has filed another complaint about {n} being annoying. Santa is reviewing the case 📁"]);
+  if (who === 'elsa' && Math.random() < .3) say.push(rnd([
+    ['elfie',"real question {n}: where will this live? Santa has seen the bedroom. there is no floor. 🫠"],
+    ['rudolph',"approved on one condition: {n} wakes up for school on time ONE day this week. just one. ⏰"],
+    ['santa',"Santa will deliver it at 7am. Oh wait. {n} won't be awake. Santa will leave it next to the snooze button. 😴"],
+    ['elfie',"adding it right under 'clean room', which has been on the list since 2023"]]));
+  const hr = new Date().getHours();
+  if (hr >= 23 || hr < 5) say.unshift(['santa', (who === 'elsa' ? "{n}. It's " + fmtTime(Date.now()) + ". THIS is why you can't wake up for school 😭 go to sleep" : "{n}, it's " + fmtTime(Date.now()) + ". Bed. Now. Santa is watching (from bed)")]);
+
   // extras
   if (/\bplease\b|\bpls\b|\bplz\b/i.test(text)){ bump(who, 5); say.push(['rudolph', "'please' detected. +5 nice points. manners are the cheat code 🎮"]); }
   const letters = text.replace(/[^a-z]/gi,'');
@@ -810,7 +900,7 @@ function think(who, text){
   if (mine === 25) say.push(['rudolph', "the sleigh has a weight limit, {n}"]);
 
   save();
-  say.slice(0, 4).forEach(([f, s]) => bot(f, fill(s, who, short)));
+  say.slice(0, 5).forEach(([f, s]) => s === '__NONO__' ? bot('santa', 'na na na nemikhad 😌', {kind:'img', src:'https://cdn.gamma.app/577q2x36h3kacv8/design-anything/QQlTWBsRUnI7EEKrCIH7Q/MGoDJv5ICVuhRXhuXlRN2.jpg'}) : bot(f, fill(s, who, short)));
 }
 function sim(a, b){ a = a.toLowerCase().trim(); b = b.toLowerCase().trim(); return a.length > 3 && b.length > 3 && (a.includes(b) || b.includes(a)); }
 
@@ -845,7 +935,20 @@ menu.onclick = async e => {
     if (!t) t = prompt('Paste the link here 🔗') || '';
     if (t){ ta.value = (ta.value ? ta.value + '\n' : '') + t.trim(); autosize(); ta.focus(); }
   }
-  if (act === 'idea') bot('elfie', 'idea for {n}: '.replace('{n}', NAME[S.sender]) + fill(rnd(IDEAS), S.sender) + ' (type it if you want it)');
+  if (act === 'idea') bot('elfie', 'idea for ' + NAME[S.sender] + ': ' + fill(rnd(Math.random() < .5 ? IDEAS_KID[S.sender] : IDEAS), S.sender) + ' (type it if you want it)');
+  if (act === 'pic') santaPic(S.sender);
+  if (act === 'tattle'){
+    const w = S.sender, o = other(w);
+    addMsg({from:w, text:`Santa, ${NAME[o]} is being annoying 😤`});
+    const r = rnd([
+      [-2,-1,"Santa has reviewed the evidence. {o}: -2 nice points. {n}: -1 for snitching. Everyone loses. Merry Christmas 🎄"],
+      [-2,0,"Noted. {o}: -2 nice points. {o}, Santa saw that. Santa sees everything. 👁️"],
+      [0,-1,"Santa checked the cameras. {n}, you started it. -1. 🙂"],
+      [-1,-1,"Santa is not getting involved. You're both getting socks. 🧦"]]);
+    bump(o, r[0]); bump(w, r[1]); save();
+    bot('santa', fill(r[2], w));
+    if (Math.random() < .5) bot('rudolph', "every. single. day. with you two 😂");
+  }
   if (act === 'lists') openLists(S.sender);
   if (act === 'share') shareLists();
 };
@@ -855,16 +958,25 @@ menu.onclick = async e => {
    ============================================================ */
 let pressT = null;
 chat.addEventListener('pointerdown', e => {
-  const b = e.target.closest('.bubble[data-id],.linkcard[data-id]'); if (!b) return;
+  const b = e.target.closest('.bubble[data-id],.linkcard[data-id],.imgb[data-id]'); if (!b) return;
   pressT = setTimeout(() => { pressT = null; openReact(b); }, 430);
 });
 ['pointerup','pointerleave','pointercancel','pointermove'].forEach(ev => chat.addEventListener(ev, e => {
   if (ev === 'pointermove' && Math.abs(e.movementY) < 4) return;
   clearTimeout(pressT);
 }));
-chat.addEventListener('dblclick', e => { const b = e.target.closest('.bubble[data-id],.linkcard[data-id]'); if (b){ e.preventDefault(); openReact(b); } });
+chat.addEventListener('dblclick', e => { const b = e.target.closest('.bubble[data-id],.linkcard[data-id],.imgb[data-id]'); if (b){ e.preventDefault(); openReact(b); } });
 chat.addEventListener('contextmenu', e => { if (e.target.closest('.bubble[data-id]')) e.preventDefault(); });
-chat.addEventListener('click', e => { if (e.target.closest('.linkcard') && document.querySelector('.react')) e.preventDefault(); });
+chat.addEventListener('click', e => {
+  if (e.target.closest('.linkcard') && document.querySelector('.react')) e.preventDefault();
+  const im = e.target.closest('.imgb');
+  if (im && !document.querySelector('.react')){
+    const m = S.msgs.find(x => x.id === +im.dataset.id);
+    const lb = document.createElement('div'); lb.className = 'lightbox';
+    lb.innerHTML = `<img src="${esc(im.dataset.img)}" alt="Photo from Santa"><p>${esc(m ? m.text : '')}</p><small>tap anywhere to close</small>`;
+    lb.onclick = () => lb.remove(); document.body.appendChild(lb);
+  }
+});
 
 function openReact(el){
   closeReact();
@@ -973,7 +1085,7 @@ shBody.addEventListener('click', e => {
   if (t.dataset.appeal){
     const old = it.verdict; it.verdict = rollVerdict(Math.max(1, it.tier - 1)); bump(it.who, -1);
     const rank = {no:0, maybe:1, yes:2};
-    const msg = it.verdict === old ? "Appeal for '{i}' DENIED. The court of Santa has spoken. 🔨"
+    const msg = it.verdict === old ? (it.verdict === 'no' ? "Appeal for '{i}': na na na nemikhad. 🔨" : "Appeal for '{i}' DENIED. The court of Santa has spoken. 🔨")
       : rank[it.verdict] > rank[old] ? "Fine. Your lawyer was convincing. '{i}' upgraded to " + V[it.verdict][0] + " " + V[it.verdict][1]
       : "You appealed '{i}' and it got WORSE. Lesson learned. " + V[it.verdict][0] + " " + V[it.verdict][1];
     bot('santa', fill(msg, it.who, it.title.slice(0,30)));
@@ -1064,6 +1176,8 @@ function intro(){
   bot('elfie', "and I'll judge it 💅");
   bot('rudolph', "rules: one wish per line. links welcome. 'money' is not a personality.");
   bot('wallet', "hi. please be gentle 🥲");
+  bot('santa', "Also. Santa learned a new phrase from your dad: 'na na na nemikhad.' Santa will be using it. A lot. 😌");
+  bot('elfie', "you can also ask Santa for a pic. he has a camera now. nobody can stop him 📸");
   bot('santa', "Tap your face down there 👇 to switch between Artin and Elsa. The 📋 up top shows your lists.");
 }
 /* iPhone keyboard: keep the composer above the keyboard, no page jumping */
@@ -1082,7 +1196,15 @@ function intro(){
   fit();
 })();
 renderHeader(); renderMe(); autosize(); snow.toggle(S.snow);
-if (!S.msgs.length) intro(); else renderChat();
+if (!S.msgs.length) intro();
+else {
+  renderChat();
+  if (!S.v2){
+    S.v2 = true; save();
+    bot('santa', "Santa got an update 🎅 Santa learned a new phrase from your dad: 'na na na nemikhad.' Santa will be using it. A lot. 😌");
+    bot('elfie', "also Santa has a camera now. ask him for a pic. nobody can stop him 📸");
+  }
+}
 </script>
 </body>
 </html>
