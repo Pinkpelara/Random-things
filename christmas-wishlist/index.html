@@ -566,6 +566,10 @@ const PICS = [
   {id:'squish', src:'https://cdn.gamma.app/577q2x36h3kacv8/design-anything/laH1yggb7CDlKGraQ6ARu/91doDjsYQbTK5BEzPQP_n.jpg', kid:'elsa', cap:"me in the warehouse after Elsa's squishy order came in 🫠"},
   {id:'room', src:'https://cdn.gamma.app/577q2x36h3kacv8/design-anything/9ytMQimIDBAK5JKX25Yw7/Yaf6eFNaMv_WiOASPNV81.jpg', kid:'elsa', cap:"tried to drop off a present in Elsa's room. Santa is still looking for the floor."},
   {id:'alarms', src:'https://cdn.gamma.app/577q2x36h3kacv8/design-anything/Njrt89FlA5BhK2D1uGb9Z/7l2f4jrPY-4M1o6e0KZGQ.jpg', kid:'elsa', cap:"me doing my best impression of Elsa on a school morning ⏰⏰⏰"},
+  {id:'dribble', src:'santa/dribble.jpg', kid:'artin', cap:"Artin. 1v1. Christmas morning. Bring your best. 😏🏀"},
+  {id:'squish2', src:'santa/squishies2.jpg', kid:'elsa', cap:"update: the squishy situation has gotten worse 🫠 Elsa, this is your fault"},
+  {id:'nap', src:'santa/nap.jpg', kid:null, cap:"me after reading both of your lists 😮‍💨💤"},
+  {id:'tea', src:'santa/tea.jpg', kid:'elsa', cap:"good morning from the North Pole ☕ Elsa, this is what 7am looks like. it exists."},
   {id:'nono', src:'https://cdn.gamma.app/577q2x36h3kacv8/design-anything/QQlTWBsRUnI7EEKrCIH7Q/MGoDJv5ICVuhRXhuXlRN2.jpg', kid:null, cap:"na na na nemikhad 😌"},
 ];
 const NEMIKHAD = ["na na na... nemikhad. 🙅‍♂️","Santa has consulted your dad. The answer is: na na na nemikhad.","na na na nemikhad 😌 (Santa learned it from your dad)","Santa's official ruling: na na na nemikhad."];
@@ -1112,6 +1116,9 @@ function think(who, text){
   for (const g of [...QA, ...MOOD]){
     if (g.k.test(lc)){ const l = fresh1(g.a); talk([[l[0], l[1].replace('{countdown}', daysLeft().replace(/^⏳ /,''))]], who); return; }
   }
+  if (/^(good morning|morning|gm)\b/.test(clean)){ talk([['santa', who === 'elsa' && new Date().getHours() < 9 ? "Elsa?? Awake?? Before 9?? Santa needs to sit down. ☕" : "Good morning, {n}! ☕"]], who); bot('santa', PICS.find(p => p.id === 'tea').cap, {kind:'img', src:'santa/tea.jpg'}); return; }
+  if (who === 'artin' && /\b(1v1|one on one|1 on 1|play me|ball is life|bet i can beat)\b/.test(clean)){ talk([['santa', "You want a 1v1 with Santa, {n}? Careful what you wish for."]], who); bot('santa', PICS.find(p => p.id === 'dribble').cap, {kind:'img', src:'santa/dribble.jpg'}); return; }
+  if (/\b(are you|r u) (tired|sleeping|asleep|busy)|go to sleep santa|take a nap/.test(clean)){ talk([['elfie', "he's been like this since 2pm"]], who); bot('santa', PICS.find(p => p.id === 'nap').cap, {kind:'img', src:'santa/nap.jpg'}); return; }
   for (const g of GREET){
     if (g.k.test(clean) && (words <= 6 || /love|sorry/.test(clean))){ if (g.nice) bump(who, g.nice); talk([fresh1(g.a)], who); return; }
   }
@@ -1218,7 +1225,7 @@ About the kids (good kids, tease lovingly; never mean, never about looks, body o
 They live near Toronto, Canada.
 Style: teen-appropriate and actually funny. Short texts (each under 200 characters). Emoji fine. RESPOND TO WHAT THE KID ACTUALLY SAID: answer questions, follow up on earlier messages in the transcript, keep running jokes going, and don't reuse lines already in the transcript.
 List rules: when the kid asks for something for Christmas (an item, a link, "I want…", "can I get…"), add it. Don't add things that are just chat. If they ask to remove something from THEIR list, remove it by id. If they say something is their #1/top, set prio 3. If they beg or make a promise (clean room, wake up early, not complaining about price), you may upgrade a verdict, maybe make a deal. Verdicts: "yes" approved, "maybe" pending, "no" (Santa says "na na na nemikhad"). Cheap/sweet things are usually yes; pricey ones often maybe or no.
-Santa pics available: dunk (Santa missing a basketball dunk), squish (Santa buried in squishies), room (Santa horrified in a messy room), alarms (Santa asleep among ringing alarm clocks), nono (Santa wagging his finger: "na na na nemikhad"). Set "pic" to one id when the kid asks for a pic/photo/selfie or one would be hilarious; otherwise null.
+Santa pics available: dunk (Santa missing a basketball dunk), dribble (Santa dribbling a basketball in a gym, winking, challenging Artin to a 1v1), squish (Santa buried in squishies), squish2 (Santa grinning in an even bigger pile of squishies), nap (Santa passed out in an armchair hugging wrapping paper), tea (morning selfie with a cup of tea), room (Santa horrified in a messy room), alarms (Santa asleep among ringing alarm clocks), nono (Santa wagging his finger: "na na na nemikhad"). Set "pic" to one id when the kid asks for a pic/photo/selfie or one would be hilarious; otherwise null.
 Reply with ONLY this JSON object:
 {"replies":[{"from":"santa|elfie|rudolph|wallet","text":"..."}],"add":[{"title":"short item name","url":null,"tier":2,"verdict":"yes|maybe|no"}],"remove":["item id"],"update":[{"id":"item id","verdict":"yes|maybe|no","prio":3}],"nice":{"artin":0,"elsa":0},"pic":null}
 tier: 1 cheap … 4 very expensive. nice: small changes from -5 to 5 for manners, begging, rudeness, kindness. Use empty arrays when nothing applies.`;
