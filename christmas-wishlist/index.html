@@ -137,6 +137,12 @@ header{
 .lightbox p{color:#fff;margin:0;text-align:center;font-size:15px;max-width:340px}
 .lightbox small{color:#aaa;font-size:12px}
 @keyframes fade{from{opacity:0}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{border:1.5px solid var(--me2);color:var(--me2);background:var(--bg);border-radius:16px;padding:6px 12px;font-size:14px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip:disabled{opacity:.4;border-color:var(--muted);color:var(--muted)}
+.aibadge{display:none;font-size:10px;font-weight:700;color:#fff;background:linear-gradient(90deg,#c62828,#2e7d32);border-radius:8px;padding:1px 6px;margin-left:4px}
+html.ai .aibadge{display:inline-block}
+.sharebox{width:100%;height:220px;border-radius:12px;border:1px solid var(--field-line);background:var(--card);color:var(--text);font:inherit;font-size:13px;padding:10px;resize:none}
 .pop{animation:pop .36s cubic-bezier(.2,1.4,.4,1)}
 @keyframes pop{from{transform:scale(.6) translateY(16px);opacity:0}to{transform:none;opacity:1}}
 .typing .bubble{display:flex;gap:4px;padding:12px 14px}
@@ -302,7 +308,7 @@ canvas#snow{position:absolute;inset:0;z-index:15;pointer-events:none}
     </button>
     <button class="group" id="groupBtn" aria-label="Group details">
       <div class="stack" id="hdrStack"></div>
-      <div class="gname"><b>🎄 Wishlist HQ</b><i>›</i></div>
+      <div class="gname"><b>🎄 Wishlist HQ</b><span class="aibadge">✨ AI</span><i>›</i></div>
     </button>
     <div class="hright">
       <button id="listBtn" aria-label="Open wishlists" title="Wishlists">
@@ -472,7 +478,7 @@ const CATS = [
   {k:/\bdog\b|puppy|\bcat\b|kitten|bunny|hamster|\bpet\b|\bfish\b|parrot|\bhorse\b|\bpony\b|guinea pig|turtle|lizard|snake/, t:3, l:[['santa',"A pet is a commitment, {n}. Who's walking it at 7am in January in Ontario? Be honest with Santa."],['elfie',"{o} is about to promise to 'help'. {o} will not help."],['rudolph',"as an animal I fully support more animals in the house 🦌❤️"]]},
   {k:/jordan|\bnike\b|dunks?\b|adidas|yeezy|new balance|asics|sneaker|\bshoes\b|\bcrocs\b|\bvans\b|converse|on cloud|hoka/, t:3, l:[['elfie',"you have two feet. TWO. how many shoes does one person need 😭"],['rudolph',"hooves don't need sneakers and honestly we're thriving"],['elfie',"your current shoes saw this message. they're hurt."]]},
   {k:/\buggs?\b|\bboots?\b/, t:2, l:[['santa',"Boots. Practical. It's -20 in January. Santa approves. Finally a sane wish."],['elfie',"more boots?? the pink ones are crying in the closet rn"]]},
-  {k:/lululemon|aritzia|belt bag|align|wunder|scuba|super puff/, t:3, l:[['elfie',"the uniform. understood. 🫡"],['rudolph',"a belt bag. to carry your phone. which is already permanently in your hand."],['santa',"Santa looked at the price tag and had to sit down. Santa is fine. Santa is FINE."]]},
+  {k:/lululemon|aritzia|belt bag|align|wunder|scuba|super puff/, t:3, l:[['elfie',"the uniform. understood. 🫡"],['rudolph',"lululemon. so you can do yoga. (you will not do yoga.)"],['santa',"Santa looked at the price tag and had to sit down. Santa is fine. Santa is FINE."]]},
   {k:/sephora|skincare|skin care|drunk elephant|\brhode\b|glossier|makeup|lip ?(gloss|oil|balm)|sol de janeiro|summer fridays|laneige|charlotte tilbury|bubble|serum|moisturi[sz]er|mascara|nail/, t:3, l:[['elfie',"a 12-step skincare routine?? bestie your skin barrier is literally perfect"],['santa',"Santa doesn't know what a 'lip oil' is but Santa respects it."],['rudolph',"my nose glows naturally. no products. just vibes. ✨🔴"]]},
   {k:/stanley|owala|hydro ?flask|\byeti\b|water bottle|tumbler/, t:2, l:[['elfie',"a $60 water bottle so you can drink... the same water. I checked. it's the same water."],['santa',"Santa approves of hydration. Santa does not approve of the price of hydration."]]},
   {k:/\blego\b/, t:2, l:[['santa',"LEGO! A classic! The elves are cheering. Santa will NOT be stepping on it barefoot though."],['elfie',"ngl the elves are elite at lego. this is our moment 💪"]]},
@@ -680,6 +686,7 @@ function renderChat(newId){
         const emo = isEmojiOnly(m.text);
         inner += `<div class="bubble${emo ? ' emoji' : ''}" data-id="${m.id}">${esc(m.text)}${tbHTML(m)}</div>`;
       }
+      if (m.kind === 'chips') inner += `<div class="chips">${m.chips.map((c, ci) => `<button class="chip" data-id="${m.id}" data-i="${ci}" ${m.used ? 'disabled' : ''}>${esc(c.label)}</button>`).join('')}</div>`;
       if (m.url){
         inner += `<a class="linkcard" href="${esc(m.url)}" target="_blank" rel="noopener noreferrer" data-id="${m.id}">
           <div class="lc-top"><img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(m.domain)}&sz=64" alt="" onerror="this.replaceWith('🎁')"></div>
@@ -763,73 +770,131 @@ function send(){
   const m = {from: who, text};
   if (first.url){ m.url = first.url; m.domain = first.domain; m.linkTitle = first.title; const mm = text.match(URL_RE); m.rawUrl = mm ? mm[1].replace(/[).,!]+$/,'') : ''; }
   addMsg(m);
-  think(who, text);
+  if (AI && !aiOff){
+    aiThink(who, text).catch(e => {
+      const code = e && e.code;
+      if (['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(code)){ aiOff = true; document.documentElement.classList.remove('ai'); }
+      think(who, text);
+    });
+  } else think(who, text);
 }
 
-const CHIT = [
-  {k:/(santa|you).{0,12}(fake|not real|doesn'?t exist|isn'?t real)/i, any:1, r:[['santa',"And yet here Santa is. In your group chat. Typing. 🤔"],['rudolph',"says the person talking to a reindeer"]]},
-  {k:/^(hi|hey|hello|yo|sup|hii+|heyy+|wassup|what'?s up)\b/i, r:[['santa',"Hi {n}! Wishes please. Santa is on a schedule. 🛷"],['elfie',"heyyy {n} 💅 what are we wishing for"]]},
-  {k:/^(thanks|thank you|ty|thx|merci)\b/i, r:[['santa',"You're welcome, {n}. Now behave. 👀"]]},
-  {k:/^(lol|lmao|haha+|hehe+|💀|😂|🤣)/i, r:[['elfie',"glad we're having fun. Santa is not laughing. Santa is CALCULATING. 🧮"]]},
-  {k:/^(ok|okay|k|kk|fine|bet)\b/i, r:[['rudolph',"ok."]]},
-  {k:/(i love you|love u|ily)/i, r:[['santa',"Santa loves you too, {n}. Santa is still judging the list though. ❤️"]]},
-  {k:/(you('?re| are)? (so )?(stupid|dumb|annoying)|shut up|i hate (you|this|santa|elfie|rudolph))/i, any:1, r:[['santa',"Language, {n}. That's -3 nice points. Santa is always watching. 👁️"]], nice:-3},
-  {k:/(naughty|nice) list|am i (on the )?(naughty|nice)|my score/i, any:1, r:[['santa',"You're at {score}/100, {n}. Status: {label}."]]},
-  {k:/who('?s| is) (the |santa'?s )?fav/i, any:1, r:[['santa',"Santa doesn't have favourites. (it's whoever has the higher nice score. currently: {fav})"]]},
-];
+/* ------------------------------------------------------------
+   Brain: helpers
+   ------------------------------------------------------------ */
 function niceLabel(v){ return v <= 20 ? 'coal-adjacent 🪨' : v <= 40 ? 'on thin ice 🧊' : v <= 60 ? 'mid. very mid. 😐' : v <= 80 ? 'pretty nice 😇' : 'suspiciously angelic 👼'; }
 function bump(who, d){ S.nice[who] = Math.max(0, Math.min(100, (S.nice[who] || 50) + d)); }
 function fav(){ const a = S.nice.artin, e = S.nice.elsa; return a === e ? "it's a tie. Santa refuses to pick. Santa has been burned before." : NAME[a > e ? 'artin' : 'elsa']; }
+function sim(a, b){ a = a.toLowerCase().trim(); b = b.toLowerCase().trim(); return a.length > 3 && b.length > 3 && (a.includes(b) || b.includes(a)); }
+const NONO_SRC = 'https://cdn.gamma.app/577q2x36h3kacv8/design-anything/QQlTWBsRUnI7EEKrCIH7Q/MGoDJv5ICVuhRXhuXlRN2.jpg';
+const ctx = () => (S.ctx = S.ctx || {});
+const shortTitle = t => t.length > 34 ? t.slice(0, 32) + '…' : t;
+const itemsOf = k => S.items.filter(x => x.who === k);
 
-function think(who, text){
-  const lines = text.split(/\n+/).map(s => s.trim()).filter(Boolean);
-  const hasUrl = URL_RE.test(text);
-
-  // chit-chat, questions and other not-a-wish messages
-  if (!hasUrl && lines.length === 1){
-    const words = text.split(/\s+/).length;
-    if (/\b(pics?|photos?|pictures?|selfies?|wyd|what are you doing|what r u doing|proof)\b/i.test(text) && (words <= 4 || /send|santa|show|see/i.test(text))){ santaPic(who); return; }
-    if (/nemikhad|na na na/i.test(text)){ bot('santa', "HEY. That's Santa's line. Your dad licensed it to Santa for the holidays. 😤"); return; }
-    if (who === 'elsa' && /artin/i.test(text) && /(annoying|stop|bother|leave|mean|touch|my room|ugh|hate|won'?t|keeps|always)/i.test(text)){
-      bump('artin', -2); S.complaints = (S.complaints || 0) + 1; save();
-      bot('santa', "Complaint received. Artin: -2 nice points. Artin, leave Elsa alone 😂");
-      bot('elfie', rnd([`that's complaint #${S.complaints} btw. the folder is getting thick 📁`, "Artin's lawyer (Artin) will respond shortly", "Santa believes you. Santa ALWAYS believes you."]));
-      return;
-    }
-    if (who === 'artin' && /elsa/i.test(text) && /(annoying|didn'?t do|started|fault|stop|lying|snitch|not me|wasn'?t me)/i.test(text)){
-      bot('santa', "Santa has heard both sides. Santa believes Elsa. Santa always believes Elsa. 🙂");
-      bot('elfie', "it's giving 'I didn't do anything' energy 😂");
-      return;
-    }
-    if (/(wake up|waking|alarm|snooze|tired|sleepy|early|school morning|\bschool\b)/i.test(text) && words <= 10){
-      bot('santa', who === 'elsa' ? "Santa heard about the school mornings, Elsa. Santa wakes up at 4am on Christmas Eve. You can do 7am. Probably. ⏰" : "Artin, Santa can confirm you're awake. Very awake. Santa can hear the basketball from the North Pole. 🏀");
-      if (who === 'elsa' && Math.random() < .5) santaPic(who);
-      return;
-    }
-    if (/(clean|messy|mess\b|my room)/i.test(text) && words <= 10){
-      bot('elfie', who === 'elsa' ? "the room. the legend. the mess. Santa sent an elf in last week. we haven't heard back 🫡" : "Artin's room: suspiciously ok. Santa is checking under the bed. 🔦");
-      return;
-    }
-    for (const c of CHIT){
-      if (c.k.test(text) && (c.any || text.split(/\s+/).length <= 5)){
-        if (c.nice) bump(who, c.nice);
-        save();
-        const [f, s] = rnd(c.r);
-        bot(f, fill(s, who).replace('{score}', S.nice[who]).replace('{label}', niceLabel(S.nice[who])).replace('{fav}', fav()));
-        return;
-      }
-    }
-    if (/\?\s*$/.test(text) && !/^(can i|could i|i want|i'?d like|may i)/i.test(text)){
-      bot(rnd(['santa','rudolph']), rnd(["great question. no idea. I'm a deer. 🦌","Santa's legal team advises Santa not to answer that.","ask your parents. no wait, don't. they'll ask what you want for christmas and we'll be back here."]));
-      return;
-    }
-    if (isEmojiOnly(text)){ bot('elfie', rnd(["very descriptive. the elves will build... a '"+text+"'. sure.", "emojis are not a wish, {n}. use your words 😤".replace('{n}', NAME[who])])); return; }
+/* pick a line nobody has heard recently */
+function fresh1(pool){
+  S.recent = S.recent || [];
+  const key = l => (Array.isArray(l) ? l[1] : l).slice(0, 40);
+  const unused = pool.filter(l => !S.recent.includes(key(l)));
+  const l = rnd(unused.length ? unused : pool);
+  S.recent.push(key(l)); if (S.recent.length > 60) S.recent.shift();
+  return l;
+}
+/* send a list of [from, text] lines, filling {n} {o} {i} */
+function talk(lines, who, item){
+  save();
+  lines.slice(0, 5).forEach(([f, s]) => s === '__NONO__'
+    ? bot('santa', 'na na na nemikhad 😌', {kind:'img', src:NONO_SRC})
+    : bot(f, fill(s, who, item)));
+}
+/* fuzzy-find one of a kid's items from a phrase */
+function findItem(k, phrase){
+  const its = itemsOf(k);
+  if (!its.length) return null;
+  const p = (phrase || '').toLowerCase().replace(/\b(the|a|an|my|that|this|it|one|thing|from|off|of|list|please|pls|santa)\b/g, ' ').replace(/[^a-z0-9 ]/g, ' ').trim();
+  if (!p) return its.find(x => x.id === ctx().lastItem) || its[its.length - 1];
+  const words = p.split(/\s+/).filter(w => w.length > 1);
+  let best = null, bestScore = 0;
+  for (const it of its){
+    const t = it.title.toLowerCase();
+    let sc = t.includes(p) ? 10 : 0;
+    for (const w of words) if (t.includes(w)) sc += w.length > 3 ? 2 : 1;
+    if (sc > bestScore){ best = it; bestScore = sc; }
   }
+  return bestScore ? best : null;
+}
+function listSummary(k){
+  const its = itemsOf(k).sort((a,b) => b.prio - a.prio || a.ts - b.ts);
+  if (!its.length) return null;
+  return its.slice(0, 8).map((x, i) => `${i+1}. ${x.title} ${V[x.verdict][0]}`).join('\n') + (its.length > 8 ? `\n…and ${its.length - 8} more 😳` : '');
+}
+function explainVerdict(it){
+  const t = it.tier, v = it.verdict;
+  if (v === 'yes') return fresh1(["It's approved, {n}! Why are you asking why?? Take the W 🏆", "It's APPROVED. Don't make Santa change his mind. 🙂", "Approved because it's reasonable. Santa likes reasonable. Santa does not get much reasonable."]);
+  if (t >= 4) return fresh1(["Because '{i}' costs more than the sleigh, {n}. The sleigh is vintage. 🛷", "Have you SEEN the price of '{i}'? Santa saw it and had to lie down.", "Because the Parents' Wallet fainted when it saw '{i}'. We're still waking it up."]);
+  if (v === 'no') return fresh1(["Santa consulted your dad. Your dad said 'na na na nemikhad'. Santa respects the chain of command.", "Because '{i}' is a want, not a need, {n}. Santa learned that from your parents.", "Santa had a feeling. Santa trusts the feeling. Beg better 😌"]);
+  return fresh1(["It's PENDING, {n}. Santa is thinking. Santa thinks slowly. Santa is 1,700 years old.", "Pending means maybe. Maybe means behave. 👀", "The elves are still voting on '{i}'. Elfie is the swing vote. good luck."]);
+}
 
-  // it's a wish (or several)
+/* ------------------------------------------------------------
+   Brain: little conversations
+   ------------------------------------------------------------ */
+const QA = [
+  {k:/how (are|r) (you|u)|how'?s it going|how you doing|how'?s (santa|your day)|what'?s up santa/i, a:[['santa',"Santa is great, thanks for asking! Busy. Very busy. The elves are on their third coffee. How are YOU, {n}?"],['santa',"Santa is good! Santa just finished reading your sibling's list. Santa needs a nap. 😮‍💨"],['elfie',"we're thriving. Santa ate 40 cookies before noon. normal tuesday"]]},
+  {k:/(what'?s|whats) (your|santa'?s) (name|real name)/i, a:[['santa',"Santa. S-A-N-T-A. Some call him Kris Kringle. Your dad calls him 'the guy who says nemikhad now'."]]},
+  {k:/where (do|does) (you|santa) live|north pole/i, a:[['santa',"The North Pole! It's like Toronto in January, but somehow worse. ❄️"],['rudolph',"north pole. no wifi. no uber eats. send help"]]},
+  {k:/(are|r) (you|u) real|is santa real/i, a:[['santa',"Santa is typing in your group chat right now. Make of that what you will. 🤔"]]},
+  {k:/how old (are|r) (you|u)|santa'?s age/i, a:[['santa',"Santa is about 1,750. Santa still has better knees than your dad though."]]},
+  {k:/how (do|does) (you|santa) (deliver|get|fit|go down)|chimney/i, a:[['santa',"Magic, physics, and a LOT of cookies. Mostly cookies. 🍪"],['rudolph',"I do all the work. he eats cookies. write that down."]]},
+  {k:/(what do|what does) (you|santa) want|what should (i|we) get (you|santa)/i, a:[['santa',"Santa wants: cookies, milk, and one (1) morning where Elsa wakes up on time. 🥛"]]},
+  {k:/favou?rite (reindeer|elf)/i, a:[['rudolph',"me. obviously. next question"],['elfie',"Santa's favourite elf is me. it's not a competition. (I won)"]]},
+  {k:/favou?rite (cookie|food|snack)/i, a:[['santa',"Chocolate chip. Warm. Santa is not picky but Santa IS particular."]]},
+  {k:/favou?rite (colou?r)/i, a:[['santa',"Red. Shocking, Santa knows."]]},
+  {k:/(what about|for|get) (my )?(mom|dad|parents)/i, a:[['santa',"Ooh, a gift for your parents? Santa is emotional. Something homemade + one day of NO fighting with your sibling = elite gift. 🥹"]]},
+  {k:/(know|met) (my )?(dad|father|baba)/i, a:[['santa',"Of course. Santa borrowed his catchphrase. 'na na na nemikhad' — the man's a legend."]]},
+  {k:/(know|met) (my )?(mom|mother|maman)/i, a:[['santa',"Santa knows your mom. Santa is a little scared of your mom. Respect. 🫡"]]},
+  {k:/(how many|how long).{0,20}(christmas|xmas|days)|when is christmas/i, a:[['santa',"{countdown} 🎄 Plenty of time to behave."]]},
+  {k:/what('?s| is) (rudolph|the reindeer) doing|where'?s rudolph/i, a:[['rudolph',"lying down. it's my off season. don't @ me"]]},
+  {k:/what('?s| is) elfie doing|what do elves do/i, a:[['elfie',"judging your lists and making squishies. mostly judging tho 💅"]]},
+  {k:/what can you do|how does this work|^help$|what do i do/i, a:[['santa',"Type a wish (or paste a link) and Santa adds it to your list. You can say things like 'remove the hoodie', 'what's on my list', 'the ps5 is my #1', or ask Santa for a pic 📸"]]},
+  {k:/(who are you|what are you)/i, a:[['santa',"Santa. The big guy. Head of Gift Approvals. 🎅"],['elfie',"I'm Elfie. I judge. that's the job 💅"]]},
+  {k:/weather|cold|snow/i, a:[['rudolph',"-34 here. I can't feel my antlers"],['santa',"Snowing at the North Pole. Snowing in Ontario soon. Get boots. (Boots are approved.)"]]},
+];
+const MOOD = [
+  {k:/\b(i'?m|im|i am) (so )?bored|\bbored\b/i, a:[['elfie',"bored?? clean your room. instant entertainment. (jk) (unless?)"],['santa',"Bored? Write Santa a list of 3 nice things you did today. Santa will wait."]]},
+  {k:/\b(i'?m|im|i am) (so )?(sad|upset)|\bsad\b/i, a:[['santa',"Aw, {n}. Santa's sending a big virtual hug 🤗 Want to tell Santa what happened?"]]},
+  {k:/\b(i'?m|im|i am) (so )?(tired|sleepy)/i, a:[['santa',"Then go to bed, {n}! Santa is begging. Sleep is approved. ✅"]]},
+  {k:/\b(i'?m|im|i am) (so )?hungry|\bhungry\b/i, a:[['santa',"Santa is also always hungry. Go eat something. Not the cookies. Those are Santa's. 🍪"]]},
+  {k:/\b(i'?m|im|i am) (so )?(excited|happy|hyped)/i, a:[['elfie',"the energy!! we love to see it ✨"]]},
+  {k:/homework|\btest\b|exam|quiz|project due/i, a:[['santa',"Homework: Santa's least favourite word. Do it before basketball/squishies and Santa will notice. 📚"],['elfie',"homework is just the elves of school. nobody likes it but it gets done 😩"]]},
+  {k:/\b(i|we) (just |finally )?(won|scored|beat)|made a (basket|shot|3)|got a 3|hit a (3|three)/i, a:[['santa',"LET'S GOOO {n} 🏀🔥 Santa is proud. Santa is ALSO noting this."]]},
+];
+const GREET = [
+  {k:/^(hi|hey|hello|yo|sup|hii+|heyy+|wassup|what'?s up|good morning|morning|hola|salam|salaam)\b/i, a:[['santa',"Hi {n}! 🎅 Got a wish for Santa?"],['elfie',"heyyy {n} 💅 what are we wishing for today"],['santa',"{n}! Santa was just thinking about you. (Santa was checking your list.)"]]},
+  {k:/^(thanks|thank you|ty|thx|merci|mersi)\b/i, a:[['santa',"You're welcome, {n}. Now behave. 👀"],['santa',"Anything for you, {n}. Within budget."]]},
+  {k:/^(lol|lmao|lmfao|haha+|hehe+|💀|😂|🤣|rofl|dead)\b/i, a:[['elfie',"glad we're having fun. Santa is not laughing. Santa is CALCULATING. 🧮"],['rudolph',"I'm hilarious, I know"],['santa',"Santa is funny. Santa has been told."]]},
+  {k:/^(ok|okay|k|kk|fine|bet|cool|alright|aight|sure)\b/i, a:[['rudolph',"ok."],['santa',"Okay! 👍"],['elfie',"k 💅"]]},
+  {k:/^(bye|gtg|good ?night|gn|night|cya|see ya)\b/i, a:[['santa',"Goodnight, {n}! 🌙 Santa will be watching. In a nice way."],['elfie',"byeee 👋 don't forget your list is still under review"]]},
+  {k:/(i love you|love u|ily|love you santa)/i, a:[['santa',"Santa loves you too, {n}. Santa is still judging the list though. ❤️"]]},
+  {k:/(sorry|my bad|i apologi)/i, a:[['santa',"Apology accepted, {n}. +2 nice points. Growth! 🌱"]], nice:2},
+];
+const RUDE = /(you('?re| are)? (so )?(stupid|dumb|annoying|ugly|fat)|shut up|i hate (you|this|santa|elfie|rudolph)|\bstfu\b|\bidiot\b)/i;
+
+/* ------------------------------------------------------------
+   Brain: wishes
+   ------------------------------------------------------------ */
+const WISH_CUE = /^(?:(?:hey|hi|yo|hello|dear|ok|okay|so|um+|also|and)[, ]+)?(?:santa[,! ]+)?(?:(?:i|we) (?:really |also |just )*(?:want|wanna|need|would like|'?d like|wish for|wish)|can i (?:get|have|pls get|please get)|could i (?:get|have)|may i (?:get|have)|please get me|get me|add|i'?m asking for|for christmas i want|my wish is|i'?d love)\s+/i;
+const CHATTY = /\b(just|chill|chilling|vibing|nothing much|not much|i'?m|im|i am|you|u|ur|you'?re|are|was|were|did|didn'?t|does|do|how|what|why|when|where|who|lol|lmao|bro|omg|today|tomorrow|yesterday|mom|dad|teacher|homework|friend|won|lost|bored|hungry|funny|guess|think|know|said|told|feel|because|cuz|went|going|gonna|gotta|hate|ate|watch(ing)?|play(ing|ed)|he|she|they|we)\b/i;
+
+function splitWishes(s){
+  const parts = s.split(/\s*(?:,|&|\+|\band\b|\balso\b)\s*/i).map(x => x.trim()).filter(Boolean);
+  return parts.length > 1 && parts.every(p => p.split(/\s+/).length <= 6) ? parts : [s];
+}
+function addWishes(who, lines, rawText){
   const added = [];
   for (const line of lines){
-    const p = parseLine(line.replace(/^(i want|i'?d like|can i (get|have)|i wish for|i need|please get me|dear santa,?)\s+/i,''));
+    const p = parseLine(line.replace(WISH_CUE, ''));
+    p.title = (p.title || '').replace(/^(a|an|the|some|a pair of|one)\s+/i, '').replace(/^\w/, ch => ch.toUpperCase());
     if (!p.title || p.title.length < 2) continue;
     const a = analyze(p);
     const item = {id: 'i' + (++S.seq), who, title: p.title, url: p.url, domain: p.domain, tier: a.tier, verdict: rollVerdict(a.tier), prio: 2, ts: Date.now()};
@@ -838,71 +903,378 @@ function think(who, text){
     if (a.nice) bump(who, a.nice);
     added.push({item, a});
   }
-  if (!added.length){ bot('santa', "Santa couldn't find a wish in that. Try again, slower. Santa is old."); return; }
+  if (!added.length){ talk([['santa', "Santa couldn't find a wish in that. Try again, slower. Santa is old."]], who); return; }
+  const c = ctx();
+  c.lastItem = added[added.length - 1].item.id; c.lastAt = Date.now(); c.lastWho = who;
 
-  const mine = S.items.filter(x => x.who === who).length;
-  const theirs = S.items.filter(x => x.who === other(who)).length;
+  const mine = itemsOf(who).length, theirs = itemsOf(other(who)).length;
   if (added.length === 1){
     const v = V[added[0].item.verdict];
     addMsg({from:'sys', text:`📋 Added to ${NAME[who]}'s list · Santa's verdict: ${v[0]} ${v[1]}`});
-  } else {
-    addMsg({from:'sys', text:`📋 ${added.length} wishes added to ${NAME[who]}'s list`});
-  }
+  } else addMsg({from:'sys', text:`📋 ${added.length} wishes added to ${NAME[who]}'s list`});
 
-  // roast the most extravagant one
   const worst = added.slice().sort((x,y) => y.a.tier - x.a.tier)[0];
-  const short = worst.item.title.length > 34 ? worst.item.title.slice(0,32) + '…' : worst.item.title;
-  const say = [];
+  c.lastItem = worst.item.id;
+  const t = worst.a.tier, say = [];
   if (added.length > 1) say.push(['santa', `${added.length} wishes in one message?? speedrun. All added, {n}. Let's talk about '{i}' though.`]);
   const pool = worst.a.pool.concat(worst.a.dom);
-  if (pool.length){
-    const p1 = rnd(pool); say.push(p1);
-    const rest = pool.filter(x => x[0] !== p1[0]);
-    if (rest.length && Math.random() < .55) say.push(rnd(rest));
-  } else {
-    const g = worst.item.url ? GENERIC_LINK.concat(GENERIC) : GENERIC;
-    const p1 = rnd(g); say.push(p1);
-    if (Math.random() < .3){ const rest = GENERIC.filter(x => x[0] !== p1[0]); say.push(rnd(rest)); }
-  }
-  const t = worst.a.tier;
-  if (t >= 3 && Math.random() < (t === 4 ? .9 : .5) && !say.some(s => s[0] === 'wallet')) say.push(['wallet', rnd(WALLET[t])]);
+  const p1 = fresh1(pool.length ? pool : (worst.item.url ? GENERIC_LINK.concat(GENERIC) : GENERIC)); say.push(p1);
+  if (pool.length > 1 && Math.random() < .45){ const rest = pool.filter(x => x[0] !== p1[0]); if (rest.length) say.push(fresh1(rest)); }
+  if (t >= 3 && Math.random() < (t === 4 ? .85 : .45) && !say.some(s => s[0] === 'wallet')) say.push(['wallet', fresh1(WALLET[t])]);
 
-  // Santa uses Dad's line
   const anyNo = added.some(x => x.item.verdict === 'no');
-  if (anyNo) say.unshift(Math.random() < .4 ? ['santa','__NONO__'] : ['santa', rnd(NEMIKHAD)]);
+  if (anyNo){ say.unshift(Math.random() < .4 ? ['santa','__NONO__'] : ['santa', fresh1(NEMIKHAD)]); say.push(['elfie', fresh1(["(you can beg. it sometimes works 👀)", "tip: say why you deserve it. Santa is weak to a good argument", "appeal hint: the word 'please' has powers"])]); }
   else if (t === 4 && Math.random() < .35) say.push(['santa', "Santa's first instinct was 'na na na nemikhad'... but Santa is thinking about it. 🤔"]);
 
-  // who's asking matters
-  if (who === 'artin' && t >= 3 && Math.random() < .7) say.push(rnd([
-    ['wallet',"watch. we buy it and {n} goes 'WHY DID YOU SPEND SO MUCH 😭'. every. single. year."],
-    ['santa',"Okay {n}, but if Santa gets this, you are NOT allowed to say 'why did u spend so much' on Christmas morning. Deal? 🤝"],
-    ['elfie',"{n} wants the expensive stuff but gets mad when anyone actually spends money. make it make sense 😂"],
-    ['rudolph',"prediction: {n} opens it, smiles for 2 seconds, then asks how much it cost 🧾"]]));
-  if (who === 'artin' && Math.random() < .15) say.push(['elfie', "unrelated but {o} has filed another complaint about {n} being annoying. Santa is reviewing the case 📁"]);
-  if (who === 'elsa' && Math.random() < .3) say.push(rnd([
-    ['elfie',"real question {n}: where will this live? Santa has seen the bedroom. there is no floor. 🫠"],
-    ['rudolph',"approved on one condition: {n} wakes up for school on time ONE day this week. just one. ⏰"],
-    ['santa',"Santa will deliver it at 7am. Oh wait. {n} won't be awake. Santa will leave it next to the snooze button. 😴"],
-    ['elfie',"adding it right under 'clean room', which has been on the list since 2023"]]));
+  if (who === 'artin' && t >= 3 && Math.random() < .7){
+    const l = fresh1([
+      ['wallet',"watch. we buy it and {n} goes 'WHY DID YOU SPEND SO MUCH 😭'. every. single. year."],
+      ['santa',"Okay {n}, but if Santa gets this, you are NOT allowed to say 'why did u spend so much' on Christmas morning. Deal? 🤝"],
+      ['elfie',"{n} wants the expensive stuff but gets mad when anyone actually spends money. make it make sense 😂"],
+      ['rudolph',"prediction: {n} opens it, smiles for 2 seconds, then asks how much it cost 🧾"]]);
+    say.push(l);
+    if (/Deal\?/.test(l[1])) c.deal = {kind:'spend', item: worst.item.id, at: Date.now(), n: c.n};
+  }
+  if (who === 'artin' && Math.random() < .12) say.push(['elfie', "unrelated but {o} has filed another complaint about {n} being annoying. Santa is reviewing the case 📁"]);
+  if (who === 'elsa' && Math.random() < .3){
+    const l = fresh1([
+      ['elfie',"real question {n}: where will this live? Santa has seen the bedroom. there is no floor. 🫠"],
+      ['rudolph',"approved on one condition: {n} wakes up for school on time ONE day this week. deal? ⏰"],
+      ['santa',"Santa will deliver it at 7am. Oh wait. {n} won't be awake. Santa will leave it next to the snooze button. 😴"],
+      ['elfie',"adding it right under 'clean room', which has been on the list since 2023"]]);
+    say.push(l);
+    if (/deal\?/.test(l[1])) c.deal = {kind:'wake', item: worst.item.id, at: Date.now(), n: c.n};
+  }
   const hr = new Date().getHours();
   if (hr >= 23 || hr < 5) say.unshift(['santa', (who === 'elsa' ? "{n}. It's " + fmtTime(Date.now()) + ". THIS is why you can't wake up for school 😭 go to sleep" : "{n}, it's " + fmtTime(Date.now()) + ". Bed. Now. Santa is watching (from bed)")]);
-
-  // extras
-  if (/\bplease\b|\bpls\b|\bplz\b/i.test(text)){ bump(who, 5); say.push(['rudolph', "'please' detected. +5 nice points. manners are the cheat code 🎮"]); }
-  const letters = text.replace(/[^a-z]/gi,'');
+  if (/\bplease\b|\bpls\b|\bplz\b/i.test(rawText)){ bump(who, 5); say.push(['rudolph', "'please' detected. +5 nice points. manners are the cheat code 🎮"]); }
+  const letters = rawText.replace(/[^a-z]/gi,'');
   if (letters.length > 6 && letters === letters.toUpperCase()){ bump(who, -1); say.unshift(['elfie', "WHY ARE WE YELLING"]); }
-  if (/!{3,}/.test(text)) say.push(['santa', "Extra exclamation marks do not make the sleigh go faster, {n}."]);
   const twin = S.items.find(x => x.who === other(who) && sim(x.title, worst.item.title));
   if (twin) say.push(['elfie', "🚨 copycat alert: {o} already asked for something like this 👀"]);
   if (mine === 5) say.push(['elfie', `{n} is at 5 wishes. {o} is at ${theirs}. just saying 👀`]);
-  if (mine === 10) say.push(['santa', "Wish #10, {n}. Santa is going to need you to pick favourites. ⭐ them in the list."]);
+  if (mine === 10) say.push(['santa', "Wish #10, {n}. Santa is going to need you to pick favourites. Tell Santa which one is your #1."]);
   if (mine === 15) say.push(['wallet', "please stop at 15 🙏"]);
-  if (mine === 25) say.push(['rudolph', "the sleigh has a weight limit, {n}"]);
-
-  save();
-  say.slice(0, 5).forEach(([f, s]) => s === '__NONO__' ? bot('santa', 'na na na nemikhad 😌', {kind:'img', src:'https://cdn.gamma.app/577q2x36h3kacv8/design-anything/QQlTWBsRUnI7EEKrCIH7Q/MGoDJv5ICVuhRXhuXlRN2.jpg'}) : bot(f, fill(s, who, short)));
+  talk(say, who, shortTitle(worst.item.title));
 }
-function sim(a, b){ a = a.toLowerCase().trim(); b = b.toLowerCase().trim(); return a.length > 3 && b.length > 3 && (a.includes(b) || b.includes(a)); }
+
+/* ------------------------------------------------------------
+   Brain: the main router
+   ------------------------------------------------------------ */
+function think(who, text){
+  const c = ctx();
+  c.n = (c.n || 0) + 1;
+  if (c.deal && c.n - (c.deal.n || 0) > 2) c.deal = null;
+  if (c.pending && c.n - (c.pending.n || 0) > 2) c.pending = null;
+  const lines = text.split(/\n+/).map(s => s.trim()).filter(Boolean);
+  const hasUrl = URL_RE.test(text);
+  const lc = text.toLowerCase().trim();
+  const clean = lc.replace(/[^a-z0-9'\s#$]/g, ' ').replace(/\s+/g, ' ').trim();
+  const words = clean ? clean.split(' ').length : 0;
+  const recentItem = c.lastItem && c.lastWho === who && Date.now() - (c.lastAt || 0) < 15 * 60e3 ? S.items.find(x => x.id === c.lastItem) : null;
+
+  if (hasUrl || lines.length > 1){ c.pending = null; addWishes(who, lines, text); return; }
+
+  // answering a question we asked ("is that a wish?")
+  if (c.pending && c.pending.who === who){
+    const pend = c.pending;
+    if (/^(y|ye|yes|yep|yeah|ya|yup|sure|ok|okay|add it|it is|ya it is|yes it is|wish)\b/i.test(clean)){ c.pending = null; addWishes(who, [pend.text], pend.text); return; }
+    if (/^(n|no|nope|nah|naw|just chatting|not a wish)\b/i.test(clean)){ c.pending = null; talk([['elfie', fresh1(["got it, just vibing then 😌", "ok ok, chatting mode 💬", "noted. not a wish. Santa can relax."])]], who); return; }
+    c.pending = null;
+  }
+
+  // answering a deal Santa offered
+  if (c.deal && Date.now() - c.deal.at < 15 * 60e3){
+    const d = c.deal, it = S.items.find(x => x.id === d.item);
+    if (/^(deal|ok|okay|fine|yes|yeah|ya|sure|bet|promise|i promise|pinky promise|agreed|🤝)/i.test(clean) || clean === ''){
+      c.deal = null; if (it && it.verdict !== 'yes'){ it.verdict = 'maybe'; }
+      bump(who, 2);
+      talk([['santa', d.kind === 'spend' ? "🤝 DEAL. It's in writing now, {n}. One 'why did u spend so much' and Santa takes it back." : "🤝 Deal. Rudolph is the witness. Rudolph never sleeps. Rudolph will know. ⏰"], ['rudolph', "witnessed. 🦌📝"]], who);
+      return;
+    }
+    if (/^(no|nope|nah|never|no deal)/i.test(clean)){
+      c.deal = null; if (it){ it.verdict = 'no'; }
+      talk([['santa', "No deal? Then na na na nemikhad 😌"], ['elfie', "bold strategy. let's see how it plays out"]], who, it && shortTitle(it.title));
+      return;
+    }
+  }
+
+  // Santa pics
+  if (/\b(pics?|photos?|pictures?|selfies?|wyd|what are you doing|what r u doing|proof|send (me )?a? ?(pic|photo))\b/i.test(lc) && !WISH_CUE.test(lc) && (words <= 5 || /send|santa|show|see/i.test(lc))){ santaPic(who); return; }
+  // dad's catchphrase
+  if (/nemikhad|na na na/i.test(lc)){ talk([['santa', fresh1(["HEY. That's Santa's line. Your dad licensed it to Santa for the holidays. 😤", "Using Santa's line against Santa?? The audacity. -1 nice point. 😂"])]], who); return; }
+  // rudeness
+  if (RUDE.test(lc)){ bump(who, -3); talk([['santa', fresh1(["Language, {n}. That's -3 nice points. Santa is always watching. 👁️", "Wow. -3 nice points. Santa will remember this in December. Oh wait. It IS December soon."])]], who); return; }
+
+  // sibling drama
+  if (who === 'elsa' && /artin/i.test(lc) && /(annoying|stop|bother|leave|mean|touch|my room|ugh|hate|won'?t|keeps|always|hit|took|stole|yell)/i.test(lc)){
+    bump('artin', -2); S.complaints = (S.complaints || 0) + 1;
+    talk([['santa', fresh1(["Complaint received. Artin: -2 nice points. Artin, leave Elsa alone 😂", "Santa has noted this. Artin: -2. Artin, Santa sees you. 👁️"])], ['elfie', fresh1([`that's complaint #${S.complaints} btw. the folder is getting thick 📁`, "Artin's lawyer (Artin) will respond shortly", "Santa believes you. Santa ALWAYS believes you."])]], who);
+    return;
+  }
+  if (who === 'artin' && /elsa/i.test(lc) && /(annoying|didn'?t do|started|fault|stop|lying|snitch|not me|wasn'?t me|bother|took|messy|room)/i.test(lc)){
+    talk([['santa', fresh1(["Santa has heard both sides. Santa believes Elsa. Santa always believes Elsa. 🙂", "Santa's ruling: you're both getting socks. 🧦", "Artin. Santa watched the replay. 📹"])], ['elfie', fresh1(["it's giving 'I didn't do anything' energy 😂", "the jury (me) is not convinced"])]], who);
+    return;
+  }
+
+  // remove a wish
+  let m;
+  if ((m = clean.match(/^(?:please )?(?:remove|delete|take off|take out|cancel|scratch|cross off|forget|nvm|never ?mind|nevermind)\b(.*)$/)) || (m = clean.match(/i (?:don'?t|dont|do not) (?:want|need) (.*?) (?:anymore|any more)$/)) || (m = clean.match(/^(?:actually )?no (.*) (?:anymore|any more)$/))){
+    const it = findItem(who, m[1]);
+    if (!it){ talk([['santa', itemsOf(who).length ? "Santa can't find that on your list, {n}. Check 📋 up top." : "Your list is empty, {n}. There's nothing to remove. Very minimalist of you."]], who); return; }
+    S.items = S.items.filter(x => x !== it); bump(who, 3);
+    if (c.lastItem === it.id) c.lastItem = null;
+    addMsg({from:'sys', text:`🗑️ Removed '${it.title}' from ${NAME[who]}'s list`});
+    talk([[rnd(['santa','elfie']), fresh1(["{n} removed '{i}'. Selfless. Mature. +3 nice points. 🥹", "deleted '{i}'?? character development 👏 +3 nice points", "'{i}' has left the list. we hardly knew it."])]], who, shortTitle(it.title));
+    return;
+  }
+
+  // set a top priority
+  if ((m = clean.match(/^(?:the )?(.+?) is (?:my |the )?(?:#?1|number one|no\.? ?1|top|most important|favou?rite|main one|priority)\b/)) || (m = clean.match(/^i (?:really really|really|rlly|reaaally+) want (?:the )?(.+)$/)) || (m = clean.match(/^(?:make|put) (.+?) (?:my )?(?:#?1|first|top|number one)/))){
+    const it = findItem(who, m[1]);
+    if (it){
+      it.prio = 3;
+      addMsg({from:'sys', text:`⭐⭐⭐ '${it.title}' is now ${NAME[who]}'s top priority`});
+      talk([['santa', fresh1(["Got it. '{i}' is the big one. Santa has underlined it. Twice. ✍️", "'{i}' = top priority. Noted. The elves have been briefed. 🫡"])], ...(it.verdict === 'no' ? [['elfie', "it's still a NEMIKHAD tho 😬 maybe beg a little"]] : [])], who, shortTitle(it.title));
+      return;
+    }
+    if (/^i (really|rlly|reaa)/.test(clean)){ addWishes(who, [m[1]], text); return; }
+  }
+
+  // list questions
+  if (/\b(what'?s|whats|what is|show|see|read|check)\b.{0,12}\b(my|the|our)\b.{0,6}\b(list|wishes|wishlist)\b|^my list\??$|what did i (ask|wish|put)|how many (wishes|things|items) (do )?i/.test(clean)){
+    const sum = listSummary(who);
+    talk(sum ? [['santa', `Here's your list, {n}:\n${sum}`], ['elfie', fresh1(["✅ = approved, 🤔 = pending, 🚫 = nemikhad. tap 📋 for the full thing", "tell Santa which one is your #1 btw 👀"])]] : [['santa', "Your list is empty, {n}! Type a wish, Santa is ready. 🎁"]], who);
+    return;
+  }
+  if ((m = clean.match(/\b(?:what'?s|whats|what is|what did|what does|show me|see)\b.{0,6}\b(elsa|artin)'?s?\b.{0,20}\b(list|want|wish|ask|getting|get)/))){
+    const k = m[1], sum = listSummary(k);
+    if (k === who){ think(who, "what's my list"); return; }
+    talk(sum ? [['santa', `${NAME[k]}'s list:\n${sum}`], ['elfie', fresh1(["snooping on your sibling's list? classic 🕵️", `don't copy ${NAME[k]} now 👀`])]] : [['santa', `${NAME[k]} hasn't wished for anything yet. Suspicious. 🤨`]], who);
+    return;
+  }
+  // scores
+  if (/(naughty|nice) list|am i (on the )?(naughty|nice|good)|my (nice )?score|how nice am i|am i being good/.test(clean)){
+    talk([['santa', `You're at ${S.nice[who]}/100, {n}. Status: ${niceLabel(S.nice[who])}`]], who); return;
+  }
+  if (/who('?s| is) (the |santa'?s )?(fav|favou?rite|winning|nicer|better)|who (is|has) more/.test(clean)){
+    talk([['santa', `Santa doesn't have favourites. (it's whoever has the higher nice score. Artin ${S.nice.artin}, Elsa ${S.nice.elsa}. currently: ${fav()})`]], who); return;
+  }
+  // will I get it?
+  if ((m = clean.match(/^(?:will i get|am i getting|am i gonna get|do i get|is|did|what about)\s+(?:the |my )?(.+?)(?:\s+(?:approved|happening|ok|allowed|a yes|a no))?$/))){
+    const it = findItem(who, m[1]);
+    if (it){ c.lastItem = it.id; c.lastAt = Date.now(); c.lastWho = who;
+      const v = V[it.verdict];
+      talk([['santa', `'{i}': ${v[0]} ${v[1]}. ` + (it.verdict === 'yes' ? "Looking good, {n}. Don't mess it up. 🙂" : it.verdict === 'no' ? "na na na nemikhad. (you could try begging)" : "Still thinking. Behave and it might happen. 👀")]], who, shortTitle(it.title));
+      return;
+    }
+  }
+
+  // follow-ups about the last wish
+  if (recentItem){
+    if (/^(why|why not|how come|but why|whyyy+|y)\b/.test(clean) && words <= 6){ talk([['santa', explainVerdict(recentItem)]], who, shortTitle(recentItem.title)); return; }
+    if (/(it'?s|its) (not (that |even )?expensive|cheap|only \$?\d+|on sale|not that much)/.test(clean)){
+      talk([['wallet', fresh1(["'it's not that expensive' is what everyone says before I cry 🥲", "on SALE? ...tell me more 👀", "cheap according to WHO"])], ['santa', "Santa will take it into consideration, {n}. 🧐"]], who); return;
+    }
+    if (who === 'artin' && /(won'?t|wont|will not|not gonna|never) (say|complain|ask)/.test(clean)){
+      if (recentItem.verdict !== 'yes'){ recentItem.verdict = recentItem.verdict === 'no' ? 'maybe' : 'yes'; addMsg({from:'sys', text:`🔁 '${recentItem.title}' upgraded to ${V[recentItem.verdict][0]} ${V[recentItem.verdict][1]}`}); }
+      bump(who, 2);
+      talk([['santa', "🤝 Santa is holding you to that, {n}. Screenshot taken. 📸 One 'why did u spend so much' and it goes back to the North Pole."], ['wallet', "I'll believe it when I see it"]], who);
+      return;
+    }
+    if (/(please+|pls+|plz+|pleeas|come on|c'?mon|but i (really )?(need|want)|i'?ll be (good|nice)|i promise|i'?ll clean|clean my room|i'?ll wake up|wake up early|i'?ll do|i deserve|i'?ve been good|i was good|i need it|i'?ll share|beg)/.test(clean) && words <= 18){
+      const it = recentItem, old = it.verdict;
+      const promise = /clean/.test(clean) ? 'clean' : /wake|early/.test(clean) ? 'wake' : /share/.test(clean) ? 'share' : null;
+      const odds = promise ? .7 : /please|pls|plz/.test(clean) ? .45 : .3;
+      if (old !== 'yes' && Math.random() < odds){
+        it.verdict = old === 'no' ? 'maybe' : 'yes'; bump(who, 1);
+        const v = V[it.verdict];
+        addMsg({from:'sys', text:`🔁 '${it.title}' upgraded to ${v[0]} ${v[1]}`});
+        if (promise === 'clean') { talk([['santa', "A CLEAN ROOM?? Santa accepts. Upgraded. But Elfie will be doing a room inspection. 🔦"], ['elfie', "I'm bringing a hazmat suit. just in case"]], who, shortTitle(it.title)); return; }
+        if (promise === 'wake') { talk([['santa', "Waking up early? On a SCHOOL day? Santa is shook. Upgraded. Rudolph is setting the alarm. ⏰"], ['rudolph', "I will be outside your window at 7am. ringing a bell."]], who, shortTitle(it.title)); return; }
+        talk([['santa', fresh1(["...fine. Santa is weak. '{i}' upgraded. Don't tell your sibling. 🤫", "Okay okay. That was a good argument. Upgraded. 📈", "Santa's heart grew three sizes. '{i}' upgraded."])]], who, shortTitle(it.title));
+      } else if (old === 'yes'){
+        if (promise){ bump(who, 3); talk([['santa', promise === 'clean' ? "A clean room?! Santa is writing this down. +3 nice points. Elfie will inspect. 🔦" : promise === 'wake' ? "Waking up early?! +3 nice points. Rudolph will be checking at 7am sharp. ⏰" : "Sharing?! +3 nice points. Santa is proud. 🥹"]], who); }
+        else talk([['elfie', "bestie it's already APPROVED. stop while you're ahead 😂"]], who);
+      } else {
+        bump(who, -1);
+        talk([['santa', fresh1(["na na na nemikhad. 😌 Nice try though.", "Santa admires the effort. Santa's answer is still no. 🙂", "Begging detected. Santa is unmoved. (Santa is a little moved.) Still no."])], ...(who === 'elsa' && !promise ? [['elfie', "hint: promises about your room or waking up early hit different 👀"]] : who === 'artin' && !promise ? [['elfie', "hint: promise you won't say 'why did u spend so much' 👀"]] : [])], who, shortTitle(it.title));
+      }
+      return;
+    }
+    if (/won'?t say|not gonna say|i won'?t complain|i promise i won'?t/.test(clean) && who === 'artin'){
+      if (recentItem.verdict !== 'yes'){ recentItem.verdict = 'maybe'; }
+      talk([['santa', "🤝 Santa is holding you to that, {n}. Screenshot taken. 📸"], ['wallet', "I'll believe it when I see it"]], who); return;
+    }
+  }
+
+  // Q&A, mood, greetings
+  for (const g of [...QA, ...MOOD]){
+    if (g.k.test(lc)){ const l = fresh1(g.a); talk([[l[0], l[1].replace('{countdown}', daysLeft().replace(/^⏳ /,''))]], who); return; }
+  }
+  for (const g of GREET){
+    if (g.k.test(clean) && (words <= 6 || /love|sorry/.test(clean))){ if (g.nice) bump(who, g.nice); talk([fresh1(g.a)], who); return; }
+  }
+  const mentionsProduct = CATS.some(cat => cat.k.test(lc));
+  if (/(wake up|waking|alarm|snooze|tired|sleepy|early|school morning|\bschool\b)/.test(lc) && words <= 12 && !mentionsProduct){
+    talk([['santa', who === 'elsa' ? fresh1(["Santa heard about the school mornings, Elsa. Santa wakes up at 4am on Christmas Eve. You can do 7am. Probably. ⏰", "Elsa, Rudolph has volunteered to be your alarm clock. He's loud. 🦌🔔"]) : fresh1(["Artin, Santa can confirm you're awake. Very awake. Santa can hear the basketball from the North Pole. 🏀", "School?! Santa believes in you, Artin. Santa also believes in homework before basketball."])]], who);
+    if (who === 'elsa' && Math.random() < .4) santaPic(who);
+    return;
+  }
+  if (/(clean|messy|mess\b|my room)/.test(lc) && words <= 12 && !mentionsProduct){
+    talk([['elfie', who === 'elsa' ? fresh1(["the room. the legend. the mess. Santa sent an elf in last week. we haven't heard back 🫡", "clean room = +10 nice points. just putting that out there 👀"]) : "Artin's room: suspiciously ok. Santa is checking under the bed. 🔦"]], who);
+    return;
+  }
+  if (/^(nothing much|not much|just chilling|chilling|nm|nothing much just chilling|not much hbu|nm hbu|hbu|wbu)$/.test(clean)){ talk([fresh1([['santa', "Same. Santa is also chilling. (Santa is not chilling. Santa has 2 billion deliveries.) 🎅"], ['elfie', "chilling?? in THIS economy?? 😂"]])], who); return; }
+  if (/^(no|nah|nope|naw|yes|yeah|ya|yep|yup|idk|i dunno|maybe|hmm+|huh|what|wdym|deal|true|facts|same|wow|omg|bruh|bro|nothing|nothing much|nm|nvm|why|sure|k|kk|ok|okay)$/.test(clean)){
+    talk([fresh1([['rudolph', "ok 🦌"], ['santa', "Santa is confused but Santa respects it. 🫡"], ['elfie', "...ok? 😂 got a wish for us or nah"], ['santa', "Noted. Santa has written down: '" + text.slice(0, 20) + "'. Very helpful. 📝"]])], who);
+    return;
+  }
+  if (isEmojiOnly(text)){ talk([['elfie', fresh1(["very descriptive. the elves will build... a '" + text + "'. sure.", "emojis are not a wish, {n}. use your words 😤", text + " right back at you"])]], who); return; }
+
+  // is it a wish?
+  const cue = WISH_CUE.test(lc);
+  const known = CATS.some(cat => cat.k.test(lc));
+  if (cue){ const body = text.replace(WISH_CUE, ''); addWishes(who, splitWishes(body), text); return; }
+  if (/\?\s*$/.test(text) || /^(what|why|how|when|where|who|is|are|do|does|can|could|will|would|should)\b/.test(clean)){
+    if (/^(can|could) (i|we|you|santa) (get|have|bring|buy)/.test(clean)){ const body = clean.replace(/^(can|could) (i|we|you|santa) (get|have|bring|buy) (me |us )?/, ''); addWishes(who, splitWishes(body), text); return; }
+    talk([fresh1([
+      ['santa', "Great question, {n}. Santa will think about it. (Santa is not thinking about it.) Got any wishes though? 🎁"],
+      ['rudolph', "great question. no idea. I'm a deer. 🦌"],
+      ['santa', "Santa's legal team advises Santa not to answer that. 😅"],
+      ['elfie', "idk bestie, I just work here 💅"]])], who);
+    return;
+  }
+  if (words <= 5 && !CHATTY.test(clean)){ addWishes(who, splitWishes(text), text); return; }
+  if (known && words <= 10 && !CHATTY.test(clean)){ addWishes(who, [text], text); return; }
+
+  // just chatting (no product in sight): reply like a person would
+  if (!mentionsProduct && CHATTY.test(clean)){
+    const neg = /(hate|ugh|annoying|worst|sucks|boring|bad day|mad|angry|cried|crying|stressed)/.test(clean);
+    const pos = /(love|best|fun|cool|amazing|awesome|great|cute|so good|yay|lets go|let'?s go)/.test(clean);
+    talk([fresh1(neg ? [
+      ['santa', "Ugh, that sounds rough, {n}. 😩 Santa is on your side. Want a wish to cheer you up?"],
+      ['elfie', "noooo 😭 that's so not it. sending elf energy your way"],
+      ['rudolph', "that's terrible. I'm sorry. here is a reindeer hug 🦌🤗"]] : pos ? [
+      ['elfie', "love that for you ✨"],
+      ['santa', "That's wonderful, {n}! Santa is smiling. Santa's beard is smiling. 😊"],
+      ['rudolph', "nice. I'm happy for you. (deer face, can't show it)"]] : [
+      ['santa', "Santa hears you, {n}. 🎅 Anything on the wishlist today?"],
+      ['elfie', "omg tell me more 👀 (also... any wishes?)"],
+      ['rudolph', "fascinating. I'm a deer, but fascinating."],
+      ['santa', "Interesting! Santa is taking notes. Santa takes notes on everything. 📝"],
+      ['elfie', "relatable tbh"]])], who);
+    return;
+  }
+
+  // unsure: ask instead of guessing (offer just the product if we can spot one)
+  let guess = text;
+  const hit = CATS.map(cat => lc.match(cat.k)).find(Boolean);
+  if (hit){
+    const ws = text.split(/\s+/), lws = ws.map(w => w.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const at = lws.findIndex(w => w.includes(hit[0].toLowerCase().split(/\s+/)[0].replace(/[^a-z0-9]/g, '')));
+    const STOP = /^(and|its|it|is|so|but|the|a|an|my|her|his|has|have|had|was|very|really|too|of|for|in|on|at|to|with|that|this|cute|cool|nice)$/;
+    if (at >= 0){
+      let a = at, b = at;
+      if (a > 0 && !STOP.test(lws[a-1]) && !CHATTY.test(lws[a-1])) a--;
+      if (b < ws.length - 1 && !STOP.test(lws[b+1]) && !CHATTY.test(lws[b+1])) b++;
+      guess = ws.slice(a, b + 1).join(' ').replace(/[.,!?]+$/, '');
+    }
+  }
+  const snip = guess.length > 40 ? guess.slice(0, 38) + '…' : guess;
+  c.pending = {who, text: guess, n: c.n};
+  bot('elfie', fill(fresh1(["wait. is that a wish or are we just chatting? 👀", "hmm. should Santa add that to your list, {n}?", "I can't tell if that's a wish 😭 is it?"]), who), {kind:'chips', chips:[{label:`🎁 Add “${snip}”`, act:'wish', val:guess, who}, {label:'💬 Just chatting', act:'chat', who}]});
+}
+
+/* quick-reply chips */
+chat.addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const m = S.msgs.find(x => x.id === +b.dataset.id); if (!m || m.used) return;
+  const ch = m.chips[+b.dataset.i]; m.used = true; ctx().pending = null; save(); renderChat();
+  if (ch.act === 'wish'){ addMsg({from: ch.who, text: '🎁 yes, add it'}); addWishes(ch.who, [ch.val], ch.val); }
+  if (ch.act === 'chat'){ addMsg({from: ch.who, text: '💬 just chatting'}); talk([['elfie', fresh1(["got it, just vibing then 😌", "ok ok, chatting mode 💬"])]], ch.who); }
+});
+
+/* ------------------------------------------------------------
+   Smart mode: when this page runs inside claude.ai, Claude writes the replies
+   ------------------------------------------------------------ */
+let AI = null, aiOff = false;
+(async () => {
+  try {
+    if (!(window.claude && typeof window.claude.use === 'function')) return;
+    const s = await window.claude.use('sample');
+    if (s){ AI = s; document.documentElement.classList.add('ai'); }
+  } catch(e){}
+})();
+
+const AI_RULES = `You write the replies in a funny iMessage-style group chat called "Wishlist HQ" where two kids, Artin and Elsa, tell Santa what they want for Christmas. You voice four characters (pick whoever fits; usually 1-3 short messages total):
+- santa: Santa. Warm, dramatic, judgy-but-loving; often calls himself "Santa" in third person. He borrowed the kids' dad's Farsi catchphrase "na na na nemikhad" (≈ "no no no, you don't need it") and uses it to turn down wishes.
+- elfie: Elfie the Elf. Sassy Gen-Z elf, mostly lowercase, roasts trends, 💅.
+- rudolph: Rudolph. Dry, deadpan reindeer. Very short sentences.
+- wallet: "Parents' Wallet". Terrified of expensive wishes. Very short and dramatic.
+About the kids (good kids, tease lovingly; never mean, never about looks, body or grades):
+- Artin: the older one (a boy, preteen/teen). Loves basketball, money and typical boy stuff. Wants expensive things, but when someone actually spends a lot on him he says "why did u spend so much 😂". Annoys his sister.
+- Elsa: the younger one (a girl). Gets obsessed with trends and overdoes it (Labubu last year, squishies this year). Her room is very messy. Can't wake up early for school. Complains Artin is annoying.
+They live near Toronto, Canada.
+Style: teen-appropriate and actually funny. Short texts (each under 200 characters). Emoji fine. RESPOND TO WHAT THE KID ACTUALLY SAID: answer questions, follow up on earlier messages in the transcript, keep running jokes going, and don't reuse lines already in the transcript.
+List rules: when the kid asks for something for Christmas (an item, a link, "I want…", "can I get…"), add it. Don't add things that are just chat. If they ask to remove something from THEIR list, remove it by id. If they say something is their #1/top, set prio 3. If they beg or make a promise (clean room, wake up early, not complaining about price), you may upgrade a verdict, maybe make a deal. Verdicts: "yes" approved, "maybe" pending, "no" (Santa says "na na na nemikhad"). Cheap/sweet things are usually yes; pricey ones often maybe or no.
+Santa pics available: dunk (Santa missing a basketball dunk), squish (Santa buried in squishies), room (Santa horrified in a messy room), alarms (Santa asleep among ringing alarm clocks), nono (Santa wagging his finger: "na na na nemikhad"). Set "pic" to one id when the kid asks for a pic/photo/selfie or one would be hilarious; otherwise null.
+Reply with ONLY this JSON object:
+{"replies":[{"from":"santa|elfie|rudolph|wallet","text":"..."}],"add":[{"title":"short item name","url":null,"tier":2,"verdict":"yes|maybe|no"}],"remove":["item id"],"update":[{"id":"item id","verdict":"yes|maybe|no","prio":3}],"nice":{"artin":0,"elsa":0},"pic":null}
+tier: 1 cheap … 4 very expensive. nice: small changes from -5 to 5 for manners, begging, rudeness, kindness. Use empty arrays when nothing applies.`;
+
+async function aiThink(who, text){
+  const lists = S.items.map(x => ({id:x.id, who:x.who, title:x.title, verdict:x.verdict, prio:x.prio, tier:x.tier}));
+  const transcript = S.msgs.filter(m => m.from !== 'sys' && m.kind !== 'stage' && m.text).slice(-16).map(m => `${SHORT[m.from] || m.from}: ${m.text}`).join('\n');
+  const input = `${AI_RULES}
+
+Now: ${new Date().toLocaleString()} · ${daysLeft().replace(/^⏳ /,'')}
+Nice scores (0-100): Artin ${S.nice.artin}, Elsa ${S.nice.elsa}
+Lists: ${JSON.stringify(lists)}
+
+Recent chat:
+${transcript}
+
+The newest message is from ${NAME[who]}: ${JSON.stringify(text)}
+Reply to ${NAME[who]} now.`;
+  showTyping('santa');
+  let r;
+  try { r = await AI.json(input, {modelTier:'quick', cache:false}); }
+  finally { hideTyping(); }
+  if (!r || typeof r !== 'object' || !Array.isArray(r.replies)) throw {code:'invalid_json'};
+
+  const first = parseLine(text.split('\n')[0]);
+  const adds = Array.isArray(r.add) ? r.add.slice(0, 6) : [];
+  const added = [];
+  for (const a of adds){
+    const title = String(a.title || '').trim().slice(0, 80); if (!title) continue;
+    const tier = Math.max(1, Math.min(4, +a.tier || 2));
+    const verdict = ['yes','maybe','no'].includes(a.verdict) ? a.verdict : rollVerdict(tier);
+    const url = a.url && /^https?:/.test(a.url) ? String(a.url) : (adds.length === 1 ? first.url : null);
+    let domain = null; try { domain = url ? new URL(url).hostname.replace(/^www\./,'') : null; } catch(e){}
+    const item = {id:'i' + (++S.seq), who, title, url, domain, tier, verdict, prio:2, ts:Date.now()};
+    S.items.push(item); added.push(item);
+  }
+  for (const id of (Array.isArray(r.remove) ? r.remove : [])){
+    const it = S.items.find(x => x.id === String(id) && x.who === who);
+    if (it){ S.items = S.items.filter(x => x !== it); addMsg({from:'sys', text:`🗑️ Removed '${it.title}' from ${NAME[who]}'s list`}); }
+  }
+  for (const u of (Array.isArray(r.update) ? r.update : [])){
+    const it = S.items.find(x => x.id === String(u.id) && x.who === who); if (!it) continue;
+    if (['yes','maybe','no'].includes(u.verdict) && u.verdict !== it.verdict){ it.verdict = u.verdict; addMsg({from:'sys', text:`🔁 '${it.title}' is now ${V[it.verdict][0]} ${V[it.verdict][1]}`}); }
+    if ([1,2,3].includes(+u.prio)) it.prio = +u.prio;
+  }
+  if (r.nice) for (const k of KIDS){ const d = Math.max(-5, Math.min(5, Math.round(+r.nice[k] || 0))); if (d) bump(k, d); }
+  if (added.length === 1) addMsg({from:'sys', text:`📋 Added to ${NAME[who]}'s list · Santa's verdict: ${V[added[0].verdict][0]} ${V[added[0].verdict][1]}`});
+  else if (added.length > 1) addMsg({from:'sys', text:`📋 ${added.length} wishes added to ${NAME[who]}'s list`});
+  if (added.length){ const c = ctx(); c.lastItem = added[added.length-1].id; c.lastAt = Date.now(); c.lastWho = who; }
+  save();
+  const replies = r.replies.filter(x => x && EMO[x.from] && x.text).slice(0, 4);
+  replies.forEach(x => bot(x.from, String(x.text).slice(0, 320)));
+  const pic = PICS.find(p => p.id === r.pic);
+  if (pic) bot('santa', pic.cap, {kind:'img', src:pic.src});
+  if (!replies.length && !pic) throw {code:'empty_completion'};
+}
 
 /* ============================================================
    Composer: who's typing, + menu
@@ -932,7 +1304,7 @@ menu.onclick = async e => {
   if (act === 'paste'){
     let t = '';
     try { t = await navigator.clipboard.readText(); } catch(err){}
-    if (!t) t = prompt('Paste the link here 🔗') || '';
+    if (!t){ ta.focus(); flashHint('long-press the text box and tap Paste 🔗'); }
     if (t){ ta.value = (ta.value ? ta.value + '\n' : '') + t.trim(); autosize(); ta.focus(); }
   }
   if (act === 'idea') bot('elfie', 'idea for ' + NAME[S.sender] + ': ' + fill(rnd(Math.random() < .5 ? IDEAS_KID[S.sender] : IDEAS), S.sender) + ' (type it if you want it)');
@@ -1099,6 +1471,7 @@ function openInfo(){
   shBody.innerHTML = `<div class="bigav"><div class="stack">${avHTML('artin')}${avHTML('santa')}${avHTML('elsa')}</div><h2>🎄 Wishlist HQ</h2><div class="small">6 people · est. this Christmas</div></div>
     <div class="members">${members.map(k => `<div class="member">${avHTML(k)}<div><b>${NAME[k]}</b><span class="small">${KIDS.includes(k) ? `Nice score ${S.nice[k]}/100 · ${(c => c + (c === 1 ? ' wish' : ' wishes'))(S.items.filter(x => x.who === k).length)}` : ROLE[k]}</span></div></div>`).join('')}</div>
     <div class="members">
+      <div class="toggle"><span>✨ Smart replies</span><span class="small">${AI && !aiOff ? 'On (powered by Claude)' : 'Built-in brain'}</span></div>
       <div class="toggle"><span>❄️ Snow</span><button class="sw ${S.snow ? 'on' : ''}" data-tog="snow" aria-label="Snow"></button></div>
       <div class="toggle"><span>🔄 Faces on the wrong people? Swap them</span><button class="sw ${S.swap ? 'on' : ''}" data-tog="swap" aria-label="Swap faces"></button></div>
     </div>
@@ -1112,8 +1485,11 @@ function toggle(k){
   if (k === 'swap'){ renderHeader(); renderMe(); renderChat(); }
   openInfo();
 }
+let resetArm = 0;
 function resetAll(){
-  if (!confirm('Delete the whole chat and both wishlists?')) return;
+  const b = shBody.querySelector('[data-act="reset"]');
+  if (Date.now() - resetArm > 4000){ resetArm = Date.now(); if (b) b.textContent = 'Tap again to delete everything'; return; }
+  resetArm = 0;
   S = fresh(); save(); closeSheet(); q = Promise.resolve(); hideTyping(); renderHeader(); renderMe(); intro();
 }
 async function shareLists(){
@@ -1126,7 +1502,11 @@ async function shareLists(){
   });
   try { if (navigator.share){ await navigator.share({title:'Christmas Wishlists', text:t}); return; } } catch(e){ if (e && e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(t); banner('elfie', 'Lists copied! Paste them to the parents 📤'); }
-  catch(e){ prompt('Copy this and send it to the parents:', t); }
+  catch(e){
+    shTitle.textContent = 'Copy & send';
+    shBody.innerHTML = `<p class="small" style="margin:0 0 8px">Select all, copy, and send it to the parents 📤</p><textarea class="sharebox" readonly>${esc(t)}</textarea>`;
+    openSheet('share'); const box = shBody.querySelector('textarea'); box.focus(); box.select();
+  }
 }
 
 /* ============================================================
