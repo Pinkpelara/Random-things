@@ -140,6 +140,10 @@ header{
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .chip{border:1.5px solid var(--me2);color:var(--me2);background:var(--bg);border-radius:16px;padding:6px 12px;font-size:14px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chip:disabled{opacity:.4;border-color:var(--muted);color:var(--muted)}
+.brainbar{position:relative;z-index:19;background:var(--bar);border-bottom:.5px solid var(--hair);padding:6px 14px 8px;font-size:12px;color:var(--muted);text-align:center}
+.brainbar b{display:block;height:4px;border-radius:2px;background:var(--hair);margin-top:5px;overflow:hidden}
+.brainbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c62828,#2e7d32);transition:width .3s}
+html.brain .aibadge{display:inline-block}
 .aibadge{display:none;font-size:10px;font-weight:700;color:#fff;background:linear-gradient(90deg,#c62828,#2e7d32);border-radius:8px;padding:1px 6px;margin-left:4px}
 html.ai .aibadge{display:inline-block}
 .sharebox{width:100%;height:220px;border-radius:12px;border:1px solid var(--field-line);background:var(--card);color:var(--text);font:inherit;font-size:13px;padding:10px;resize:none}
@@ -319,6 +323,7 @@ canvas#snow{position:absolute;inset:0;z-index:15;pointer-events:none}
       </button>
     </div>
   </header>
+  <div class="brainbar" id="brainbar" hidden><span></span><b><i></i></b></div>
 
   <main class="chat" id="chat" aria-live="polite"></main>
 
@@ -1134,7 +1139,7 @@ function think(who, text){
   }
   if (/^(nothing much|not much|just chilling|chilling|nm|nothing much just chilling|not much hbu|nm hbu|hbu|wbu)$/.test(clean)){ talk([fresh1([['santa', "Same. Santa is also chilling. (Santa is not chilling. Santa has 2 billion deliveries.) 🎅"], ['elfie', "chilling?? in THIS economy?? 😂"]])], who); return; }
   if (/^(no|nah|nope|naw|yes|yeah|ya|yep|yup|idk|i dunno|maybe|hmm+|huh|what|wdym|deal|true|facts|same|wow|omg|bruh|bro|nothing|nothing much|nm|nvm|why|sure|k|kk|ok|okay)$/.test(clean)){
-    talk([fresh1([['rudolph', "ok 🦌"], ['santa', "Santa is confused but Santa respects it. 🫡"], ['elfie', "...ok? 😂 got a wish for us or nah"], ['santa', "Noted. Santa has written down: '" + text.slice(0, 20) + "'. Very helpful. 📝"]])], who);
+    reply(who, text, [fresh1([['rudolph', "ok 🦌"], ['santa', "Santa is confused but Santa respects it. 🫡"], ['elfie', "...ok? 😂 got a wish for us or nah"], ['santa', "Noted. Santa has written down: '" + text.slice(0, 20) + "'. Very helpful. 📝"]])]);
     return;
   }
   if (isEmojiOnly(text)){ talk([['elfie', fresh1(["very descriptive. the elves will build... a '" + text + "'. sure.", "emojis are not a wish, {n}. use your words 😤", text + " right back at you"])]], who); return; }
@@ -1145,11 +1150,11 @@ function think(who, text){
   if (cue){ const body = text.replace(WISH_CUE, ''); addWishes(who, splitWishes(body), text); return; }
   if (/\?\s*$/.test(text) || /^(what|why|how|when|where|who|is|are|do|does|can|could|will|would|should)\b/.test(clean)){
     if (/^(can|could) (i|we|you|santa) (get|have|bring|buy)/.test(clean)){ const body = clean.replace(/^(can|could) (i|we|you|santa) (get|have|bring|buy) (me |us )?/, ''); addWishes(who, splitWishes(body), text); return; }
-    talk([fresh1([
+    reply(who, text, [fresh1([
       ['santa', "Great question, {n}. Santa will think about it. (Santa is not thinking about it.) Got any wishes though? 🎁"],
       ['rudolph', "great question. no idea. I'm a deer. 🦌"],
       ['santa', "Santa's legal team advises Santa not to answer that. 😅"],
-      ['elfie', "idk bestie, I just work here 💅"]])], who);
+      ['elfie', "idk bestie, I just work here 💅"]])]);
     return;
   }
   if (words <= 5 && !CHATTY.test(clean)){ addWishes(who, splitWishes(text), text); return; }
@@ -1159,7 +1164,7 @@ function think(who, text){
   if (!mentionsProduct && CHATTY.test(clean)){
     const neg = /(hate|ugh|annoying|worst|sucks|boring|bad day|mad|angry|cried|crying|stressed)/.test(clean);
     const pos = /(love|best|fun|cool|amazing|awesome|great|cute|so good|yay|lets go|let'?s go)/.test(clean);
-    talk([fresh1(neg ? [
+    reply(who, text, [fresh1(neg ? [
       ['santa', "Ugh, that sounds rough, {n}. 😩 Santa is on your side. Want a wish to cheer you up?"],
       ['elfie', "noooo 😭 that's so not it. sending elf energy your way"],
       ['rudolph', "that's terrible. I'm sorry. here is a reindeer hug 🦌🤗"]] : pos ? [
@@ -1170,7 +1175,7 @@ function think(who, text){
       ['elfie', "omg tell me more 👀 (also... any wishes?)"],
       ['rudolph', "fascinating. I'm a deer, but fascinating."],
       ['santa', "Interesting! Santa is taking notes. Santa takes notes on everything. 📝"],
-      ['elfie', "relatable tbh"]])], who);
+      ['elfie', "relatable tbh"]])]);
     return;
   }
 
@@ -1199,6 +1204,8 @@ chat.addEventListener('click', e => {
   const m = S.msgs.find(x => x.id === +b.dataset.id); if (!m || m.used) return;
   const ch = m.chips[+b.dataset.i]; m.used = true; ctx().pending = null; save(); renderChat();
   if (ch.act === 'wish'){ addMsg({from: ch.who, text: '🎁 yes, add it'}); addWishes(ch.who, [ch.val], ch.val); }
+  if (ch.act === 'brain'){ addMsg({from: S.sender, text: '🧠 yes, install it'}); startBrain(true); return; }
+  if (ch.act === 'later'){ addMsg({from: S.sender, text: 'not now'}); talk([['elfie', "ok! it's in the ⓘ menu whenever (tap the group name up top)"]], S.sender); return; }
   if (ch.act === 'chat'){ addMsg({from: ch.who, text: '💬 just chatting'}); talk([['elfie', fresh1(["got it, just vibing then 😌", "ok ok, chatting mode 💬"])]], ch.who); }
 });
 
@@ -1449,6 +1456,7 @@ shBody.addEventListener('click', e => {
   if (t.dataset.tab){ listTab = t.dataset.tab; renderLists(); return; }
   if (t.dataset.act === 'share'){ shareLists(); return; }
   if (t.dataset.act === 'reset'){ resetAll(); return; }
+  if (t.dataset.act === 'brain'){ startBrain(true); return; }
   if (t.dataset.tog){ toggle(t.dataset.tog); return; }
   const id = t.dataset.star || t.dataset.del || t.dataset.appeal;
   const it = S.items.find(x => x.id === id); if (!it) return;
@@ -1478,7 +1486,7 @@ function openInfo(){
   shBody.innerHTML = `<div class="bigav"><div class="stack">${avHTML('artin')}${avHTML('santa')}${avHTML('elsa')}</div><h2>🎄 Wishlist HQ</h2><div class="small">6 people · est. this Christmas</div></div>
     <div class="members">${members.map(k => `<div class="member">${avHTML(k)}<div><b>${NAME[k]}</b><span class="small">${KIDS.includes(k) ? `Nice score ${S.nice[k]}/100 · ${(c => c + (c === 1 ? ' wish' : ' wishes'))(S.items.filter(x => x.who === k).length)}` : ROLE[k]}</span></div></div>`).join('')}</div>
     <div class="members">
-      <div class="toggle"><span>✨ Smart replies</span><span class="small">${AI && !aiOff ? 'On (powered by Claude)' : 'Built-in brain'}</span></div>
+      ${AI && !aiOff ? `<div class="toggle"><span>✨ Smart replies</span><span class="small">On (powered by Claude)</span></div>` : brainRow()}
       <div class="toggle"><span>❄️ Snow</span><button class="sw ${S.snow ? 'on' : ''}" data-tog="snow" aria-label="Snow"></button></div>
       <div class="toggle"><span>🔄 Faces on the wrong people? Swap them</span><button class="sw ${S.swap ? 'on' : ''}" data-tog="swap" aria-label="Swap faces"></button></div>
     </div>
@@ -1552,6 +1560,139 @@ const snow = (() => {
 })();
 
 /* ============================================================
+   Santa's AI brain, running on the phone itself (WebLLM + WebGPU).
+   Free, no limits, no login, messages never leave the device.
+   The rule brain still handles wishes and lists; the AI brain does the talking.
+   ============================================================ */
+const BRAIN_LIB = 'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.87/+esm';
+/* best first; if a phone runs out of memory the next one is tried */
+const BRAIN_MODELS = {
+  f16: ['Llama-3.2-3B-Instruct-q4f16_1-MLC', 'gemma-2-2b-it-q4f16_1-MLC'],
+  f32: ['gemma-2-2b-it-q4f32_1-MLC-1k'],
+};
+const brain = {state:'off', pct:0, engine:null, busy:false, err:''};
+const BAD_WORDS = /\b(fuck|shit|bitch|damn|sex|kill yourself|kys|hell no|stupid kid|fat|ugly)\b/i;
+
+async function brainKind(){
+  if (!('gpu' in navigator)) return null;
+  try { const a = await navigator.gpu.requestAdapter(); if (!a) return null; return a.features.has('shader-f16') ? 'f16' : 'f32'; }
+  catch(e){ return null; }
+}
+function brainWorker(){
+  const code = `import { WebWorkerMLCEngineHandler } from "${BRAIN_LIB}"; const h = new WebWorkerMLCEngineHandler(); self.onmessage = (m) => h.onmessage(m);`;
+  return new Worker(URL.createObjectURL(new Blob([code], {type:'text/javascript'})), {type:'module'});
+}
+async function startBrain(asked){
+  if (['checking','loading','ready'].includes(brain.state)) return;
+  brain.state = 'checking'; brainUI();
+  const kind = await brainKind();
+  if (!kind){
+    brain.state = 'unsupported'; S.brain = false; save(); brainUI();
+    if (asked) bot('elfie', "bad news bestie: this phone can't run Santa's AI brain 😭 it needs a newer phone/browser. the built-in brain is still here tho");
+    return;
+  }
+  brain.state = 'loading'; brain.pct = 0; brainUI();
+  const progress = r => { brain.pct = Math.round((r.progress || 0) * 100); brain.note = r.text || ''; brainUI(); };
+  try {
+    const webllm = await import(BRAIN_LIB);
+    const chain = BRAIN_MODELS[kind].slice(S.brainModel ? Math.max(0, BRAIN_MODELS[kind].indexOf(S.brainModel)) : 0);
+    let lastErr = null;
+    for (const model of chain){
+      try {
+        try { brain.engine = await webllm.CreateWebWorkerMLCEngine(brainWorker(), model, {initProgressCallback: progress}); }
+        catch(e){ if (/memory|OOM|allocate|device lost|exceed/i.test(String(e && e.message || e))) throw e; brain.engine = await webllm.CreateMLCEngine(model, {initProgressCallback: progress}); }
+        brain.model = model; S.brainModel = model; lastErr = null; break;
+      } catch(e){ lastErr = e; brain.engine = null; brain.pct = 0; brainUI(); }
+    }
+    if (lastErr || !brain.engine) throw lastErr || new Error('no model');
+    brain.state = 'ready'; S.brain = true; save(); brainUI();
+    if (asked) bot('santa', "🧠✨ Santa's new brain is installed! Santa is now 1,000% smarter. Go on, talk to Santa.");
+  } catch(e){
+    brain.state = 'error'; brain.err = String(e && e.message || e).slice(0, 200); brainUI();
+    if (asked) bot('elfie', "the brain download didn't work 😵 try again on Wi-Fi from the ⓘ menu (tap the group name)");
+  }
+}
+
+const VOICES = {
+  santa: {name:'Santa', intro:'You are Santa Claus texting in a family group chat with two kids. You are warm, funny and a little dramatic, and you call yourself "Santa".',
+    ex:[['Elsa','im so tired today','Maybe because SOMEONE stayed up late again? 😴 Santa sees everything. Early bedtime tonight!'],['Artin','santa do you play basketball',"Santa has a deadly jump shot. Santa also has 1,700-year-old knees. Let's call it a tie. 🏀"]]},
+  elfie: {name:'Elfie', intro:'You are Elfie, a sassy teenage elf texting in a family group chat with two kids. You write in lowercase, you are playful, and you sometimes say "bestie".',
+    ex:[['Elsa','i got a new hoodie',"bestie the closet is already full. where is it even going to live 😭"],['Artin','i scored 20 points today','ok mr. NBA 😤 proud of u but the elves still saw u skip homework']]},
+  rudolph: {name:'Rudolph', intro:'You are Rudolph the reindeer texting in a family group chat with two kids. You are dry and deadpan, with very short sentences.',
+    ex:[['Artin','rudolph are you fast','faster than you on a school morning.'],['Elsa','do you like snow',"I live in it. it's fine. my nose keeps me warm."]]},
+};
+function pickVoice(text){
+  if (/rudolph|reindeer|\bdeer\b/i.test(text)) return 'rudolph';
+  if (/elfie|\belf\b/i.test(text)) return 'elfie';
+  if (/santa/i.test(text)) return 'santa';
+  const r = Math.random(); return r < .55 ? 'santa' : r < .85 ? 'elfie' : 'rudolph';
+}
+function brainPrompt(who, text, voice){
+  const v = VOICES[voice];
+  const list = k => itemsOf(k).map(x => `${x.title} (${x.verdict === 'yes' ? 'approved' : x.verdict === 'no' ? 'nemikhad' : 'pending'})`).join(', ') || 'nothing yet';
+  const chatLines = S.msgs.filter(m => m.from !== 'sys' && m.kind !== 'stage' && m.kind !== 'chips' && m.text).slice(-7, -1)
+    .map(m => `${SHORT[m.from] || m.from}: ${m.text.replace(/\n/g, ' ').slice(0, 160)}`).join('\n');
+  return `${v.intro} Keep every reply short: 1 or 2 sentences, under 30 words. Be kind and family-friendly; tease gently. Never promise that a kid will get a gift: Santa only decides on Christmas.
+Facts about the kids: Artin (older brother) loves basketball and money, but if a gift is expensive he says "why did u spend so much". He sometimes annoys his sister. Elsa (younger sister) is obsessed with trends (squishies this year, Labubu last year), her room is messy, and she can't wake up early for school. They live near Toronto. The kids' dad always says "na na na nemikhad" (Farsi for "no no no, you don't need it") and Santa borrowed it.
+Wishlists: Artin: ${list('artin')}. Elsa: ${list('elsa')}.
+
+Examples of the style (don't repeat them):
+${v.ex.map(([a, b, c]) => `${a}: ${b}\n${v.name}: ${c}`).join('\n')}
+
+Recent chat:
+${chatLines}
+${NAME[who]}: ${text}
+
+Write only ${v.name}'s next text, replying directly to ${NAME[who]}.`;
+}
+function cleanBrain(out, voice){
+  const v = VOICES[voice];
+  let t = String(out || '').split('\n').map(x => x.trim()).filter(x => x && !/^(artin|elsa)\s*:/i.test(x)).join(' ');
+  t = t.replace(/^(santa|elfie|elfie the elf|rudolph)\s*[:：]\s*/i, '').replace(/\*\*/g, '').replace(/^["“]+|["”]+$/g, '').trim();
+  if (t.length < 2 || t.length > 260) return null;
+  if (v.ex.some(e => t.toLowerCase().includes(e[2].toLowerCase().slice(0, 25)))) return null;  // parroted an example
+  if (BAD_WORDS.test(t)) return null;
+  return t;
+}
+/* use the AI brain for conversation when it's ready; otherwise the canned lines */
+async function reply(who, text, fallback){
+  if (brain.state !== 'ready' || brain.busy){ talk(fallback, who); return; }
+  brain.busy = true;
+  await q; showTyping('santa');
+  try {
+    const voice = pickVoice(text);
+    const r = await brain.engine.chat.completions.create({
+      messages:[{role:'user', content: brainPrompt(who, text, voice)}], temperature: 0.8, top_p: 0.95, max_tokens: 70,
+    });
+    hideTyping();
+    const out = cleanBrain(r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content, voice);
+    if (out) bot(voice, out); else talk(fallback, who);
+  } catch(e){ hideTyping(); talk(fallback, who); }
+  finally { brain.busy = false; }
+}
+
+/* status bar + header badge */
+function brainUI(){
+  const bar = document.getElementById('brainbar');
+  if (bar){
+    const show = brain.state === 'loading' || brain.state === 'checking';
+    bar.hidden = !show;
+    if (show){
+      bar.querySelector('span').textContent = brain.state === 'checking' ? "Checking this phone…" : `Loading Santa's brain… ${brain.pct}% ${S.brain ? '' : '(first time takes a while, keep this open)'}`;
+      bar.querySelector('i').style.width = brain.pct + '%';
+    }
+  }
+  document.documentElement.classList.toggle('brain', brain.state === 'ready');
+  if (sheetOpen === 'info') openInfo();
+}
+function brainRow(){
+  const s = brain.state;
+  const label = s === 'ready' ? 'On ✓ (runs on this phone)' : s === 'loading' ? `Downloading… ${brain.pct}%` : s === 'checking' ? 'Checking…' : s === 'unsupported' ? "This phone can't run it" : s === 'error' ? 'Download failed' : 'Off';
+  const btn = (s === 'off' || s === 'error') ? `<button class="chip" data-act="brain" style="margin-top:8px">🧠 ${s === 'error' ? 'Try again' : 'Install'} (~1.8 GB, use Wi-Fi)</button>` : '';
+  return `<div class="toggle" style="flex-wrap:wrap"><span>🧠 Santa's AI brain</span><span class="small">${label}</span>${btn ? `<div style="width:100%">${btn}<p class="small" style="margin:6px 0 0">Free, unlimited and private: the AI runs on the phone, nothing is sent anywhere. Downloads once, then works offline.</p></div>` : ''}</div>`;
+}
+
+/* ============================================================
    Boot
    ============================================================ */
 function intro(){
@@ -1566,6 +1707,13 @@ function intro(){
   bot('santa', "Also. Santa learned a new phrase from your dad: 'na na na nemikhad.' Santa will be using it. A lot. 😌");
   bot('elfie', "you can also ask Santa for a pic. he has a camera now. nobody can stop him 📸");
   bot('santa', "Tap your face down there 👇 to switch between Artin and Elsa. The 📋 up top shows your lists.");
+  offerBrain();
+}
+function offerBrain(){
+  S.v3 = true; save();
+  if (!('gpu' in navigator) || window.claude) return;
+  bot('elfie', "psst. Santa can get a REAL AI brain that lives on this phone 🧠 free, private, no limits. one-time download (~1.8 GB) so use Wi-Fi. works best on newer phones. want it?",
+    {kind:'chips', chips:[{label:'🧠 Install Santa\'s brain', act:'brain'}, {label:'Not now', act:'later'}]});
 }
 /* iPhone keyboard: keep the composer above the keyboard, no page jumping */
 (() => {
@@ -1591,7 +1739,9 @@ else {
     bot('santa', "Santa got an update 🎅 Santa learned a new phrase from your dad: 'na na na nemikhad.' Santa will be using it. A lot. 😌");
     bot('elfie', "also Santa has a camera now. ask him for a pic. nobody can stop him 📸");
   }
+  if (!S.v3 && !S.brain) offerBrain();
 }
+if (S.brain) startBrain(false);
 </script>
 </body>
 </html>
