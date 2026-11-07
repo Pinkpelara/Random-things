@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Wishlist HQ</title>
 <meta name="theme-color" content="#0f3d2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Wishlist HQ">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&display=swap" rel="stylesheet">
@@ -29,7 +36,7 @@
   --field:#1c1c1e; --field-line:#3a3a3c; --snow:rgba(255,255,255,.55);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%}
+html,body{margin:0;height:100%;overscroll-behavior:none;touch-action:manipulation;-webkit-text-size-adjust:100%}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   background:radial-gradient(1200px 700px at 20% 0%, var(--page2), transparent 60%),
@@ -179,12 +186,13 @@ header{
 .me-btn::after{content:"⇄";position:absolute;right:-4px;bottom:-3px;background:var(--me2);color:#fff;font-size:10px;width:16px;height:16px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--bg)}
 .plus{width:34px;height:34px;border-radius:50%;background:var(--them);display:grid;place-items:center;flex:none;margin-bottom:2px;font-size:22px;color:var(--muted);transition:transform .25s}
 .plus.open{transform:rotate(45deg)}
-.field{flex:1;display:flex;align-items:flex-end;border:1px solid var(--field-line);border-radius:20px;background:var(--field);padding:3px 3px 3px 12px;min-height:38px}
-.field textarea{flex:1;border:0;outline:0;resize:none;background:none;color:var(--text);font:inherit;font-size:16px;line-height:1.3;padding:6px 0;max-height:120px}
+.field{flex:1;min-width:0;display:flex;align-items:flex-end;border:1px solid var(--field-line);border-radius:20px;background:var(--field);padding:3px 3px 3px 12px;min-height:38px}
+.field textarea{flex:1;min-width:0;width:100%;border:0;outline:0;resize:none;background:none;color:var(--text);font:inherit;font-size:16px;line-height:1.3;padding:6px 0;max-height:120px}
 .field textarea::placeholder{color:var(--muted)}
 .sendb{width:30px;height:30px;border-radius:50%;background:var(--me2);color:#fff;display:grid;place-items:center;flex:none;transition:transform .15s,opacity .15s}
 .sendb:disabled{opacity:.35}
 .sendb svg{width:16px;height:16px}
+@media (max-width:360px){.composer{gap:6px;padding-left:8px;padding-right:8px}.me-btn,.me-btn .av{width:34px;height:34px}.plus{width:30px;height:30px}.menu{left:44px}}
 .hint{position:absolute;top:-22px;left:0;right:0;text-align:center;font-size:11px;color:var(--muted);pointer-events:none}
 .menu{position:absolute;bottom:calc(100% + 6px);left:52px;background:var(--card);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden;transform-origin:bottom left;transform:scale(.8);opacity:0;pointer-events:none;transition:.2s;z-index:30;min-width:210px}
 .menu.on{transform:none;opacity:1;pointer-events:auto}
@@ -535,7 +543,7 @@ function slugTitle(u){
     if (!s) s = segs.filter(x => /[a-z]/i.test(x) && /[-_+]/.test(x)).sort((a,b) => b.length - a.length)[0];
     if (!s && url.searchParams.get('q')) s = url.searchParams.get('q');
     if (!s) return null;
-    const words = s.replace(/\.(html?|php|aspx)$/i,'').split(/[-_+\s]+/).filter(w => w && !/^\d+$/.test(w) && !/^[a-z0-9]{9,}$/i.test(w) || /^[a-z]{9,}$/i.test(w));
+    const words = s.replace(/\.(html?|php|aspx)$/i,'').split(/[-_+\s]+/).filter(w => w && !/^\d+$/.test(w) && !/^[a-z0-9]{9,}$/i.test(w) && !/^[a-z]{0,2}\d{4,}$/i.test(w) || /^[a-z]{9,}$/i.test(w));
     if (!words.length) return null;
     let t = words.join(' ');
     t = t.charAt(0).toUpperCase() + t.slice(1);
@@ -551,7 +559,7 @@ function parseLine(line){
     try { domain = new URL(url).hostname.replace(/^www\./,''); } catch(e){ url = null; }
     title = line.replace(m[1],'');
   }
-  title = title.replace(/^[\s\-*•·]+|^\d+[.)]\s*/,'').replace(/\s+/g,' ').trim();
+  title = title.replace(/^[\s\-*•·]+|^\d+[.)]\s*/,'').replace(/[\s,]*\b(please+|pls+|plz+|thanks?|thank you|santa)\b[\s!.?]*$/i,'').replace(/\s+/g,' ').trim();
   if (!title && url) title = slugTitle(url) || ('something from ' + domain);
   return {title, url, domain};
 }
@@ -1058,6 +1066,21 @@ function intro(){
   bot('wallet', "hi. please be gentle 🥲");
   bot('santa', "Tap your face down there 👇 to switch between Artin and Elsa. The 📋 up top shows your lists.");
 }
+/* iPhone keyboard: keep the composer above the keyboard, no page jumping */
+(() => {
+  const vv = window.visualViewport, phone = document.getElementById('phone');
+  const framed = matchMedia('(min-width:700px) and (min-height:760px)');
+  if (!vv) return;
+  const fit = () => {
+    if (framed.matches){ phone.style.height = ''; return; }
+    phone.style.height = vv.height + 'px';
+    if (window.scrollY) window.scrollTo(0, 0);
+    scrollDown();
+  };
+  vv.addEventListener('resize', fit);
+  vv.addEventListener('scroll', () => { if (!framed.matches && window.scrollY) window.scrollTo(0, 0); });
+  fit();
+})();
 renderHeader(); renderMe(); autosize(); snow.toggle(S.snow);
 if (!S.msgs.length) intro(); else renderChat();
 </script>
