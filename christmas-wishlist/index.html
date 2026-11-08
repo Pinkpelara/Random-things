@@ -4,14 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Wishlist HQ</title>
-<meta name="theme-color" content="#0f3d2e">
+<meta name="theme-color" content="#b71c2a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Wishlist HQ">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="format-detection" content="telephone=no">
-<link rel="apple-touch-icon" href="icon.png">
-<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&display=swap" rel="stylesheet">
@@ -143,9 +144,6 @@ header{
 .brainbar{position:relative;z-index:19;background:var(--bar);border-bottom:.5px solid var(--hair);padding:6px 14px 8px;font-size:12px;color:var(--muted);text-align:center}
 .brainbar b{display:block;height:4px;border-radius:2px;background:var(--hair);margin-top:5px;overflow:hidden}
 .brainbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c62828,#2e7d32);transition:width .3s}
-html.brain .aibadge{display:inline-block}
-.aibadge{display:none;font-size:10px;font-weight:700;color:#fff;background:linear-gradient(90deg,#c62828,#2e7d32);border-radius:8px;padding:1px 6px;margin-left:4px}
-html.ai .aibadge{display:inline-block}
 .sharebox{width:100%;height:220px;border-radius:12px;border:1px solid var(--field-line);background:var(--card);color:var(--text);font:inherit;font-size:13px;padding:10px;resize:none}
 .pop{animation:pop .36s cubic-bezier(.2,1.4,.4,1)}
 @keyframes pop{from{transform:scale(.6) translateY(16px);opacity:0}to{transform:none;opacity:1}}
@@ -312,7 +310,7 @@ canvas#snow{position:absolute;inset:0;z-index:15;pointer-events:none}
     </button>
     <button class="group" id="groupBtn" aria-label="Group details">
       <div class="stack" id="hdrStack"></div>
-      <div class="gname"><b>🎄 Wishlist HQ</b><span class="aibadge">✨ AI</span><i>›</i></div>
+      <div class="gname"><b>🎄 Wishlist HQ</b><i>›</i></div>
     </button>
     <div class="hright">
       <button id="listBtn" aria-label="Open wishlists" title="Wishlists">
@@ -1199,7 +1197,8 @@ chat.addEventListener('click', e => {
   const ch = m.chips[+b.dataset.i]; m.used = true; ctx().pending = null; save(); renderChat();
   if (ch.act === 'wish'){ addMsg({from: ch.who, text: '🎁 yes, add it'}); addWishes(ch.who, [ch.val], ch.val); }
   if (ch.act === 'brain'){ addMsg({from: S.sender, text: '🧠 yes, install it'}); startBrain(true); return; }
-  if (ch.act === 'later'){ addMsg({from: S.sender, text: 'not now'}); talk([['elfie', "ok! it's in the ⓘ menu whenever (tap the group name up top)"]], S.sender); return; }
+  if (ch.act === 'install'){ showInstall(); return; }
+  if (ch.act === 'later'){ addMsg({from: S.sender, text: 'later'}); talk([['elfie', "ok! it's in the menu whenever (tap the group name up top)"]], S.sender); return; }
   if (ch.act === 'chat'){ addMsg({from: ch.who, text: '💬 just chatting'}); talk([['elfie', fresh1(["got it, just vibing then 😌", "ok ok, chatting mode 💬"])]], ch.who); }
 });
 
@@ -1529,6 +1528,7 @@ shBody.addEventListener('click', e => {
   if (t.dataset.act === 'share'){ shareLists(); return; }
   if (t.dataset.act === 'reset'){ resetAll(); return; }
   if (t.dataset.act === 'brain'){ startBrain(true); return; }
+  if (t.dataset.act === 'install'){ showInstall(); return; }
   if (t.dataset.tog){ toggle(t.dataset.tog); return; }
   const id = t.dataset.star || t.dataset.del || t.dataset.appeal;
   const it = S.items.find(x => x.id === id); if (!it) return;
@@ -1558,8 +1558,8 @@ function openInfo(){
   shBody.innerHTML = `<div class="bigav"><div class="stack">${avHTML('artin')}${avHTML('santa')}${avHTML('elsa')}</div><h2>🎄 Wishlist HQ</h2><div class="small">6 people · est. this Christmas</div></div>
     <div class="members">${members.map(k => `<div class="member">${avHTML(k)}<div><b>${NAME[k]}</b><span class="small">${KIDS.includes(k) ? `Nice score ${S.nice[k]}/100 · ${(c => c + (c === 1 ? ' wish' : ' wishes'))(S.items.filter(x => x.who === k).length)}` : ROLE[k]}</span></div></div>`).join('')}</div>
     <div class="members">
-      <div class="toggle" style="flex-wrap:wrap"><span>✨ Smart replies</span><span class="small">On · last reply: ${esc(lastSource)}</span><p class="small" style="width:100%;margin:6px 0 0">${AI && !aiOff ? 'Claude → ' : ''}free cloud AI (OVHcloud, LLM7) → ${brain.state === 'ready' ? 'AI on this phone → ' : ''}built-in brain. If one is busy or offline, the next one answers.</p></div>
-      ${AI && !aiOff ? '' : brainRow()}
+      
+      ${isStandalone() || window.claude ? '' : `<div class="toggle"><span>📲 Add to Home Screen</span><button class="chip" data-act="install">How?</button></div>`}
       <div class="toggle"><span>❄️ Snow</span><button class="sw ${S.snow ? 'on' : ''}" data-tog="snow" aria-label="Snow"></button></div>
       <div class="toggle"><span>🔄 Faces on the wrong people? Swap them</span><button class="sw ${S.swap ? 'on' : ''}" data-tog="swap" aria-label="Swap faces"></button></div>
     </div>
@@ -1661,7 +1661,6 @@ async function startBrain(asked){
   const kind = await brainKind();
   if (!kind){
     brain.state = 'unsupported'; S.brain = false; save(); brainUI();
-    if (asked) bot('elfie', "bad news bestie: this phone can't run Santa's AI brain 😭 it needs a newer phone/browser. the built-in brain is still here tho");
     return;
   }
   brain.state = 'loading'; brain.pct = 0; brainUI();
@@ -1679,10 +1678,8 @@ async function startBrain(asked){
     }
     if (lastErr || !brain.engine) throw lastErr || new Error('no model');
     brain.state = 'ready'; S.brain = true; save(); brainUI();
-    if (asked) bot('santa', "🧠✨ Santa's new brain is installed! Santa is now 1,000% smarter. Go on, talk to Santa.");
   } catch(e){
     brain.state = 'error'; brain.err = String(e && e.message || e).slice(0, 200); brainUI();
-    if (asked) bot('elfie', "the brain download didn't work 😵 try again on Wi-Fi from the ⓘ menu (tap the group name)");
   }
 }
 
@@ -1766,18 +1763,39 @@ function brainUI(){
     const show = brain.state === 'loading' || brain.state === 'checking';
     bar.hidden = !show;
     if (show){
-      bar.querySelector('span').textContent = brain.state === 'checking' ? "Checking this phone…" : `Loading Santa's brain… ${brain.pct}% ${S.brain ? '' : '(first time takes a while, keep this open)'}`;
+      bar.querySelector('span').textContent = brain.state === 'checking' ? "❄️ Santa is getting ready…" : `❄️ Santa is getting ready… ${brain.pct}%`;
       bar.querySelector('i').style.width = brain.pct + '%';
     }
   }
   document.documentElement.classList.toggle('brain', brain.state === 'ready');
   if (sheetOpen === 'info') openInfo();
 }
-function brainRow(){
-  const s = brain.state;
-  const label = s === 'ready' ? 'On ✓ (runs on this phone)' : s === 'loading' ? `Downloading… ${brain.pct}%` : s === 'checking' ? 'Checking…' : s === 'unsupported' ? "This phone can't run it" : s === 'error' ? 'Download failed' : 'Off';
-  const btn = (s === 'off' || s === 'error') ? `<button class="chip" data-act="brain" style="margin-top:8px">🧠 ${s === 'error' ? 'Try again' : 'Install'} (~1.8 GB, use Wi-Fi)</button>` : '';
-  return `<div class="toggle" style="flex-wrap:wrap"><span>🧠 Santa's AI brain</span><span class="small">${label}</span>${btn ? `<div style="width:100%">${btn}<p class="small" style="margin:6px 0 0">Free, unlimited and private: the AI runs on the phone, nothing is sent anywhere. Downloads once, then works offline.</p></div>` : ''}</div>`;
+
+/* ============================================================
+   Home-screen app
+   ============================================================ */
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let installPrompt = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; });
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) && !window.claude) navigator.serviceWorker.register('sw.js').catch(() => {});
+function offerInstall(){
+  if (isStandalone() || S.installOffered || window.claude) return;
+  S.installOffered = true; save();
+  bot('elfie', "pro tip: put this chat on your home screen so Santa's always one tap away 📲", {kind:'chips', chips:[{label:'📲 Show me how', act:'install'}, {label:'Later', act:'later'}]});
+}
+async function showInstall(){
+  if (installPrompt){ installPrompt.prompt(); try { await installPrompt.userChoice; } catch(e){} installPrompt = null; return; }
+  shTitle.textContent = 'Add to Home Screen';
+  const share = `<svg width="18" height="22" viewBox="0 0 18 22" style="vertical-align:-4px"><path d="M9 1v13M4.5 5.5 9 1l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9H3a1.5 1.5 0 0 0-1.5 1.5v8A1.5 1.5 0 0 0 3 20h12a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 15 9h-2" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
+  shBody.innerHTML = `<div class="bigav"><img src="icon-180.png" alt="" width="84" height="84" style="border-radius:20px;box-shadow:0 6px 18px rgba(0,0,0,.25)"><h2>Wishlist HQ</h2><div class="small">Santa, one tap away 🎅</div></div>
+    <div class="members">
+      <div class="member"><span class="av bot santa">1</span><div><b>Tap the Share button ${share}</b><span class="small">${isIOS ? 'at the bottom of Safari (or the ••• menu, then Share)' : "in your browser's menu"}</span></div></div>
+      <div class="member"><span class="av bot elfie">2</span><div><b>Tap “Add to Home Screen”</b><span class="small">scroll down the list if you don't see it</span></div></div>
+      <div class="member"><span class="av bot rudolph">3</span><div><b>Tap “Add”</b><span class="small">Wishlist HQ appears on your home screen 🎄</span></div></div>
+    </div>
+    <p class="small" style="text-align:center">Tip: open it from the home screen from now on. It opens full screen, like a real app.</p>`;
+  openSheet('install');
 }
 
 /* ============================================================
@@ -1795,13 +1813,7 @@ function intro(){
   bot('santa', "Also. Santa learned a new phrase from your dad: 'na na na nemikhad.' Santa will be using it. A lot. 😌");
   bot('elfie', "you can also ask Santa for a pic. he has a camera now. nobody can stop him 📸");
   bot('santa', "Tap your face down there 👇 to switch between Artin and Elsa. The 📋 up top shows your lists.");
-  offerBrain();
-}
-function offerBrain(){
-  S.v3 = true; save();
-  if (!('gpu' in navigator) || window.claude) return;
-  bot('elfie', "psst. Santa can get a REAL AI brain that lives on this phone 🧠 free, private, no limits. one-time download (~1.8 GB) so use Wi-Fi. works best on newer phones. want it?",
-    {kind:'chips', chips:[{label:'🧠 Install Santa\'s brain', act:'brain'}, {label:'Not now', act:'later'}]});
+  offerInstall();
 }
 /* iPhone keyboard: keep the composer above the keyboard, no page jumping */
 (() => {
@@ -1827,7 +1839,7 @@ else {
     bot('santa', "Santa got an update 🎅 Santa learned a new phrase from your dad: 'na na na nemikhad.' Santa will be using it. A lot. 😌");
     bot('elfie', "also Santa has a camera now. ask him for a pic. nobody can stop him 📸");
   }
-  if (!S.v3 && !S.brain) offerBrain();
+  if (!S.installOffered) setTimeout(offerInstall, 2500);
 }
 if (S.brain) startBrain(false);
 </script>
