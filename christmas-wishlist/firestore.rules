@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // A family doc can be opened only by someone who already knows its code.
+    // There is deliberately no "list" rule here, so nobody can browse family codes.
+    match /families/{family} {
+      allow get, create, update: if request.auth != null;
+
+      // Everything inside a family (messages, wishlists, members, typing).
+      // {sub}/{doc} makes sure this only applies at least one level down.
+      match /{sub}/{doc}/{rest=**} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}

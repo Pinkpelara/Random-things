@@ -1,7 +1,7 @@
 /* Wishlist HQ offline support: the app opens instantly and works without internet.
    The page itself is network-first (so updates arrive), photos and icons are cache-first. */
-const CACHE = 'wishlist-hq-v1';
-const SHELL = ['./', './index.html', './manifest.json', './icon.png', './icon-180.png', './icon-192.png', './icon-512.png',
+const CACHE = 'wishlist-hq-v2';
+const SHELL = ['./', './index.html', './manifest.json', './family-config.js', './vendor/firebase.js', './icon.png', './icon-180.png', './icon-192.png', './icon-512.png',
   './santa/dribble.jpg', './santa/squishies2.jpg', './santa/nap.jpg', './santa/tea.jpg'];
 
 self.addEventListener('install', e => {
@@ -15,6 +15,11 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;                       // chat requests to the AI services pass straight through
   const url = new URL(req.url);
   const isPage = req.mode === 'navigate' || (url.origin === location.origin && /\/(index\.html)?$/.test(url.pathname));
+  if (url.origin === location.origin && /family-config\.js$/.test(url.pathname)){   // settings: always try the network first
+    e.respondWith(fetch(req).then(res => { if (res.ok){ const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); } return res; })
+      .catch(() => caches.match(req).then(r => r || Response.error())));
+    return;
+  }
   if (isPage){
     e.respondWith((async () => {
       const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 4000);

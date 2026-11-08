@@ -145,6 +145,34 @@ header{
 .brainbar b{display:block;height:4px;border-radius:2px;background:var(--hair);margin-top:5px;overflow:hidden}
 .brainbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c62828,#2e7d32);transition:width .3s}
 .sharebox{width:100%;height:220px;border-radius:12px;border:1px solid var(--field-line);background:var(--card);color:var(--text);font:inherit;font-size:13px;padding:10px;resize:none}
+html.fam .me-btn::after{display:none}
+.av.adult img{width:100%;height:100%;margin:0;object-fit:cover}
+.av.adult.letter{color:#fff;font-weight:700;font-size:16px;background:linear-gradient(#c79bd6,#7b4fa0)}
+.av.adult.letter.maman{background:linear-gradient(#f7a7b8,#c2185b)}
+.av.adult.letter.yasi{background:linear-gradient(#ffd27a,#e08600)}
+.row .av.adult.letter{font-size:13px}
+.imgb.own{width:auto;max-width:220px;background:none}
+.imgb.own img{width:100%;height:auto;max-height:300px;object-fit:cover;border-radius:18px}
+.imgb{position:relative}
+.imgb .tb{top:-10px;right:-10px}
+.setup{position:absolute;inset:0;z-index:90;background:radial-gradient(circle at 50% 20%,#c62828,#7a1424 70%);display:grid;place-items:center;padding:24px;overflow-y:auto}
+.setup-card{width:100%;max-width:360px;background:var(--sheet);border-radius:22px;padding:24px 20px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.setup-card h2{margin:6px 0 6px;font-size:24px}
+.setup-card p{color:var(--muted);font-size:15px;margin:0 0 14px;line-height:1.35}
+.setup-icon{width:72px;height:72px;border-radius:17px;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.setup-input{width:100%;font:inherit;font-size:20px;font-weight:700;letter-spacing:.06em;text-align:center;padding:12px;border-radius:12px;border:1.5px solid var(--field-line);background:var(--card);color:var(--text);text-transform:uppercase}
+.setup-err{color:var(--red)!important;font-size:14px!important;margin:10px 0 0!important}
+.setup-link{display:block;margin:14px auto 0;color:var(--me2);font-size:15px;font-weight:600}
+.setup-code{white-space:nowrap;font-size:clamp(18px,6.6vw,28px);font-weight:800;letter-spacing:.05em;margin:10px 0 14px;padding:14px;border-radius:14px;background:var(--card);border:2px dashed var(--me2)}
+.bigbtn.ghost2{background:var(--card);color:var(--me2)}
+.who-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.who-tile{background:var(--card);border-radius:16px;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.who-tile .av{width:64px;height:64px;font-size:26px}
+.who-tile .av.letter{font-size:28px}
+.setup-photo .av.letter{font-size:42px}
+.member .av.letter,.kidhead .av.letter{font-size:18px}
+.setup-photo{display:flex;justify-content:center;margin:6px 0 14px}
+.setup-photo .av{width:96px;height:96px;font-size:40px}
 .pop{animation:pop .36s cubic-bezier(.2,1.4,.4,1)}
 @keyframes pop{from{transform:scale(.6) translateY(16px);opacity:0}to{transform:none;opacity:1}}
 .typing .bubble{display:flex;gap:4px;padding:12px 14px}
@@ -331,6 +359,7 @@ canvas#snow{position:absolute;inset:0;z-index:15;pointer-events:none}
     <button class="plus" id="plusBtn" aria-label="More">+</button>
     <div class="menu" id="menu">
       <button data-act="paste">🔗 <span>Paste a link</span></button>
+      <button data-act="photo">📷 <span>Send a photo</span></button>
       <button data-act="pic">📸 <span>Ask Santa for a pic</span></button>
       <button data-act="idea">🎲 <span>Elfie, give me an idea</span></button>
       <button data-act="tattle">🚨 <span>Tell on your sibling</span></button>
@@ -355,6 +384,7 @@ canvas#snow{position:absolute;inset:0;z-index:15;pointer-events:none}
   <div class="banner" id="banner"></div>
 </div>
 
+<script src="family-config.js"></script>
 <script>
 /* Face photos for the caricatures. null = drawn cartoon faces. */
 const PHOTOS = null;
@@ -381,7 +411,10 @@ const store = {
 };
 const fresh = () => ({v:1, seq:0, msgs:[], items:[], nice:{artin:50, elsa:50}, sender:'artin', snow:true, swap:false, pokes:{artin:0, elsa:0}, seenPics:[], complaints:0, v2:true});
 let S = Object.assign(fresh(), store.get() || {});
-const save = () => { if (S.msgs.length > 260) S.msgs = S.msgs.slice(-260); store.set(S); };
+const save = () => {
+  if (typeof FAM !== 'undefined' && FAM.on){ store.set(Object.assign({}, S, {msgs:[], items:[]})); famPush(); return; }
+  if (S.msgs.length > 260) S.msgs = S.msgs.slice(-260); store.set(S);
+};
 
 /* ============================================================
    Drawings: faces, bodies, hat
@@ -444,6 +477,7 @@ const HAT = `<svg class="hat" viewBox="0 0 100 72" aria-hidden="true">
 
 function avHTML(k, cls=''){
   if (EMO[k]) return `<span class="av bot ${k} ${cls}" aria-hidden="true">${EMO[k]}</span>`;
+  if (k === 'maman' || k === 'yasi') return adultAv(k, cls);
   return `<span class="av kid ${look(k)} ${cls}" aria-hidden="true">${faceHTML(k)}</span>`;
 }
 
@@ -640,6 +674,7 @@ const chat = document.getElementById('chat');
 let typingEl = null, sheetOpen = null;
 
 function addMsg(m, quiet){
+  if (FAM.on) return famAddMsg(m, quiet);
   m.id = ++S.seq; m.ts = Date.now(); S.msgs.push(m); save();
   if (!quiet) renderChat(m.id);
   return m;
@@ -657,12 +692,13 @@ function bot(from, text, extra){
 }
 function showTyping(from){
   hideTyping();
-  typingEl = document.createElement('div');
+  famTyping(from, 5000);
+  typingEl = document.createElement('div'); typingEl.dataset.from = from;
   typingEl.className = 'row them tail gap typing pop';
   typingEl.innerHTML = `${avHTML(from)}<div class="col"><div class="bubble"><span></span><span></span><span></span></div></div>`;
   chat.appendChild(typingEl); scrollDown();
 }
-function hideTyping(){ if (typingEl){ typingEl.remove(); typingEl = null; } }
+function hideTyping(){ if (typingEl){ famTyping(typingEl.dataset.from, 0); typingEl.remove(); typingEl = null; } }
 function scrollDown(){ requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; }); }
 
 const fmtTime = ts => new Date(ts).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
@@ -670,15 +706,20 @@ const fmtDay = ts => { const d = new Date(ts), t = new Date(); return d.toDateSt
 const isEmojiOnly = s => /^(\p{Extended_Pictographic}|\p{Emoji_Component}|\u200d|\ufe0f|\s){1,8}$/u.test(s) && !/[a-z0-9]/i.test(s);
 
 function renderChat(newId){
-  const me = S.sender;
+  const me = FAM.on ? FAM.me : S.sender;
+  const isNew = id => newId instanceof Set ? newId.has(String(id)) : id === newId;
   let h = '';
-  const list = S.msgs;
+  let list = S.msgs;
+  if (FAM.on){
+    list = S.msgs.concat(FAM.local).sort((a, b) => a.ts - b.ts);
+    list.unshift({id:'stage', from:'santa', kind:'stage', text:'', ts: list.length ? list[0].ts : Date.now()});
+  }
   let lastMe = -1;
   list.forEach((m,i) => { if (m.from === me) lastMe = i; });
   list.forEach((m, i) => {
     const prev = list[i-1], next = list[i+1];
     if (!prev || m.ts - prev.ts > 3600e3) h += `<div class="stamp-time"><b>${i ? '' : 'iMessage<br>'}${fmtDay(m.ts)}</b> ${fmtTime(m.ts)}</div>`;
-    const anim = m.id === newId ? ' pop' : '';
+    const anim = isNew(m.id) ? ' pop' : '';
     if (m.from === 'sys'){ h += `<div class="sys${anim}">${esc(m.text)}</div>`; return; }
     const side = m.from === me ? 'me' : 'them';
     const same = (a) => a && a.from === m.from && a.from !== 'sys' && a.kind !== 'stage';
@@ -688,12 +729,12 @@ function renderChat(newId){
       inner = stageHTML();
     } else {
       const onlyUrl = m.url && m.text.trim().replace(/[).,!]+$/,'') === m.rawUrl;
-      if (m.kind === 'img') inner += `<button class="imgb" data-img="${esc(m.src)}" data-id="${m.id}" aria-label="Open photo"><img src="${esc(m.src)}" alt="Photo from Santa" width="220" height="275" loading="lazy" onerror="this.parentNode.classList.add('broken')"></button>`;
-      if (!onlyUrl){
+      if (m.kind === 'img'){ const src = imgSrc(m); inner += `<button class="imgb${EMO[m.from] ? '' : ' own'}" data-img="${esc(src)}" data-id="${m.id}" aria-label="Open photo"><img src="${esc(src)}" alt="Photo from ${esc(NAME[m.from] || '')}" ${EMO[m.from] ? 'width="220" height="275"' : ''} loading="lazy" onerror="this.parentNode.classList.add('broken')">${m.text ? '' : tbHTML(m)}</button>`; }
+      if (!onlyUrl && (m.text || m.kind !== 'img')){
         const emo = isEmojiOnly(m.text);
         inner += `<div class="bubble${emo ? ' emoji' : ''}" data-id="${m.id}">${esc(m.text)}${tbHTML(m)}</div>`;
       }
-      if (m.kind === 'chips') inner += `<div class="chips">${m.chips.map((c, ci) => `<button class="chip" data-id="${m.id}" data-i="${ci}" ${m.used ? 'disabled' : ''}>${esc(c.label)}</button>`).join('')}</div>`;
+      if (m.kind === 'chips' && (!FAM.on || !m.chips.some(c => c.who) || m.chips.some(c => c.who === me))) inner += `<div class="chips">${m.chips.map((c, ci) => `<button class="chip" data-id="${m.id}" data-i="${ci}" ${m.used ? 'disabled' : ''}>${esc(c.label)}</button>`).join('')}</div>`;
       if (m.url){
         inner += `<a class="linkcard" href="${esc(m.url)}" target="_blank" rel="noopener noreferrer" data-id="${m.id}">
           <div class="lc-top"><img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(m.domain)}&sz=64" alt="" onerror="this.replaceWith('🎁')"></div>
@@ -710,6 +751,7 @@ function renderChat(newId){
   });
   chat.innerHTML = h;
   if (typingEl) chat.appendChild(typingEl);
+  if (FAM.on) renderRemoteTyping();
   bindStage();
   scrollDown();
 }
@@ -765,7 +807,7 @@ setInterval(() => document.querySelectorAll('.countdown').forEach(e => e.textCon
    ============================================================ */
 const ta = document.getElementById('ta'), sendBtn = document.getElementById('sendBtn');
 function autosize(){ ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 120) + 'px'; sendBtn.disabled = !ta.value.trim(); }
-ta.addEventListener('input', autosize);
+ta.addEventListener('input', () => { autosize(); if (FAM.on && ta.value.trim()) famTyping(FAM.me, 4000); });
 ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); send(); } });
 sendBtn.onclick = () => { send(); ta.focus(); };
 
@@ -777,6 +819,9 @@ function send(){
   const m = {from: who, text};
   if (first.url){ m.url = first.url; m.domain = first.domain; m.linkTitle = first.title; const mm = text.match(URL_RE); m.rawUrl = mm ? mm[1].replace(/[).,!]+$/,'') : ''; }
   addMsg(m);
+  if (FAM.on) famTyping(who, 0);
+  if (isAdult(who)){ adultThink(who, text); return; }
+  if (FAM.on && talkingToPerson(who, text) && Math.random() > .3) return;   // talking to a person, not to Santa
   smartThink(who, text).then(ok => { if (!ok) think(who, text); }, () => think(who, text));
 }
 
@@ -899,7 +944,7 @@ function addWishes(who, lines, rawText){
     p.title = (p.title || '').replace(/^(a|an|the|some|a pair of|one)\s+/i, '').replace(/^\w/, ch => ch.toUpperCase());
     if (!p.title || p.title.length < 2) continue;
     const a = analyze(p);
-    const item = {id: 'i' + (++S.seq), who, title: p.title, url: p.url, domain: p.domain, tier: a.tier, verdict: rollVerdict(a.tier), prio: 2, ts: Date.now()};
+    const item = {id: 'i' + newId(), who, title: p.title, url: p.url, domain: p.domain, tier: a.tier, verdict: rollVerdict(a.tier), prio: 2, ts: Date.now()};
     S.items.push(item);
     bump(who, a.tier === 1 ? 1 : -(a.tier - 1) * 2);
     if (a.nice) bump(who, a.nice);
@@ -1194,8 +1239,8 @@ function think(who, text){
 /* quick-reply chips */
 chat.addEventListener('click', e => {
   const b = e.target.closest('.chip'); if (!b) return;
-  const m = S.msgs.find(x => x.id === +b.dataset.id); if (!m || m.used) return;
-  const ch = m.chips[+b.dataset.i]; m.used = true; ctx().pending = null; save(); renderChat();
+  const m = S.msgs.concat(FAM.local).find(x => String(x.id) === b.dataset.id); if (!m || m.used) return;
+  const ch = m.chips[+b.dataset.i]; m.used = true; famPatch(m, {used:true}); ctx().pending = null; save(); renderChat();
   if (ch.act === 'wish'){ addMsg({from: ch.who, text: '🎁 yes, add it'}); addWishes(ch.who, [ch.val], ch.val); }
   if (ch.act === 'brain'){ addMsg({from: S.sender, text: '🧠 yes, install it'}); startBrain(true); return; }
   if (ch.act === 'install'){ showInstall(); return; }
@@ -1224,6 +1269,7 @@ About the kids (good kids, tease lovingly; never mean, never about looks, body o
 - Artin: the older one (a boy, preteen/teen). Loves basketball, money and typical boy stuff. Wants expensive things, but when someone actually spends a lot on him he says "why did u spend so much 😂". Annoys his sister.
 - Elsa: the younger one (a girl). Gets obsessed with trends and overdoes it (Labubu last year, squishies this year). Her room is very messy. Can't wake up early for school. Complains Artin is annoying.
 They live near Toronto, Canada.
+Grown-ups in the chat: Maman (the kids' mom) and Yasi (the kids' aunt). When a grown-up writes, reply to them warmly with light teasing, like family (keep it kid-friendly, the kids read everything). Grown-ups don't have wishlists, so never add wishes for them. If a grown-up says a kid can or can't have something, update that item's verdict.
 How to text: the kids are 10-13 and can smell a bot instantly, so write exactly like a real person texting in a family group chat.
 - Be actually funny: tease, exaggerate, and make callbacks to the kid's wishes and quirks (Artin's basketball and "why did u spend so much", Elsa's squishies, messy room and mornings). A flat answer like "ok" or "plants" is a fail: never reply with only one or two words.
 - Short: most texts are under 20 words, in plain everyday words.
@@ -1343,22 +1389,22 @@ function looksLikeWish(text){
 }
 function applySmart(r, who, text){
   const first = parseLine(text.split('\n')[0]);
-  const adds = looksLikeWish(text) ? r.add.slice(0, 6) : [], added = [];
+  const adds = !isAdult(who) && looksLikeWish(text) ? r.add.slice(0, 6) : [], added = [];
   for (const a of adds){
     const title = String((a && (a.title || a.item || a.name)) || '').trim().slice(0, 80); if (!title) continue;
     const tier = Math.max(1, Math.min(4, +a.tier || 2));
     const verdict = ['yes','maybe','no'].includes(a.verdict) ? a.verdict : rollVerdict(tier);
     const url = a.url && /^https?:/.test(a.url) ? String(a.url) : (adds.length === 1 ? first.url : null);
     let domain = null; try { domain = url ? new URL(url).hostname.replace(/^www\./,'') : null; } catch(e){}
-    const item = {id:'i' + (++S.seq), who, title, url, domain, tier, verdict, prio:2, ts:Date.now()};
+    const item = {id:'i' + newId(), who, title, url, domain, tier, verdict, prio:2, ts:Date.now()};
     S.items.push(item); added.push(item);
   }
   for (const id of r.remove){
-    const it = S.items.find(x => x.id === String(id) && x.who === who);
+    const it = !isAdult(who) && S.items.find(x => x.id === String(id) && x.who === who);
     if (it){ S.items = S.items.filter(x => x !== it); addMsg({from:'sys', text:`🗑️ Removed '${it.title}' from ${NAME[who]}'s list`}); }
   }
   for (const u of r.update){
-    const it = u && S.items.find(x => x.id === String(u.id) && x.who === who); if (!it) continue;
+    const it = u && S.items.find(x => x.id === String(u.id) && (x.who === who || isAdult(who))); if (!it) continue;
     if (['yes','maybe','no'].includes(u.verdict) && u.verdict !== it.verdict){ it.verdict = u.verdict; addMsg({from:'sys', text:`🔁 '${it.title}' is now ${V[it.verdict][0]} ${V[it.verdict][1]}`}); }
     if ([1,2,3].includes(+u.prio)) it.prio = +u.prio;
   }
@@ -1408,10 +1454,12 @@ async function smartThink(who, text){
 const meBtn = document.getElementById('meBtn'), hint = document.getElementById('hint');
 function renderMe(){
   meBtn.innerHTML = avHTML(S.sender);
-  ta.placeholder = `Wish something, ${NAME[S.sender]}…`;
+  ta.placeholder = FAM.on ? (isAdult(S.sender) ? 'iMessage' : `Wish something, ${NAME[S.sender]}…`) : `Wish something, ${NAME[S.sender]}…`;
+  if (FAM.on){ meBtn.setAttribute('aria-label', `This phone is ${NAME[S.sender]}`); return; }
   meBtn.setAttribute('aria-label', `Typing as ${NAME[S.sender]}. Tap to switch to ${NAME[other(S.sender)]}`);
 }
 meBtn.onclick = () => {
+  if (FAM.on){ flashHint(`this phone is ${NAME[FAM.me]} 👋`); return; }
   S.sender = other(S.sender); save();
   meBtn.classList.add('flip'); setTimeout(() => meBtn.classList.remove('flip'), 460);
   renderMe(); renderChat(); renderHeader();
@@ -1433,8 +1481,9 @@ menu.onclick = async e => {
     if (!t){ ta.focus(); flashHint('long-press the text box and tap Paste 🔗'); }
     if (t){ ta.value = (ta.value ? ta.value + '\n' : '') + t.trim(); autosize(); ta.focus(); }
   }
-  if (act === 'idea') bot('elfie', 'idea for ' + NAME[S.sender] + ': ' + fill(rnd(Math.random() < .5 ? IDEAS_KID[S.sender] : IDEAS), S.sender) + ' (type it if you want it)');
+  if (act === 'idea') bot('elfie', 'idea for ' + NAME[S.sender] + ': ' + fill(rnd(Math.random() < .5 && IDEAS_KID[S.sender] ? IDEAS_KID[S.sender] : IDEAS), S.sender) + ' (type it if you want it)');
   if (act === 'pic') santaPic(S.sender);
+  if (act === 'photo') sendPhoto();
   if (act === 'tattle'){
     const w = S.sender, o = other(w);
     addMsg({from:w, text:`Santa, ${NAME[o]} is being annoying 😤`});
@@ -1469,7 +1518,7 @@ chat.addEventListener('click', e => {
   if (e.target.closest('.linkcard') && document.querySelector('.react')) e.preventDefault();
   const im = e.target.closest('.imgb');
   if (im && !document.querySelector('.react')){
-    const m = S.msgs.find(x => x.id === +im.dataset.id);
+    const m = S.msgs.concat(FAM.local).find(x => String(x.id) === im.dataset.id);
     const lb = document.createElement('div'); lb.className = 'lightbox';
     lb.innerHTML = `<img src="${esc(im.dataset.img)}" alt="Photo from Santa"><p>${esc(m ? m.text : '')}</p><small>tap anywhere to close</small>`;
     lb.onclick = () => lb.remove(); document.body.appendChild(lb);
@@ -1478,7 +1527,7 @@ chat.addEventListener('click', e => {
 
 function openReact(el){
   closeReact();
-  const m = S.msgs.find(x => x.id === +el.dataset.id); if (!m) return;
+  const m = S.msgs.concat(FAM.local).find(x => String(x.id) === el.dataset.id); if (!m) return;
   const r = el.getBoundingClientRect();
   const dim = document.createElement('div'); dim.className = 'dim'; dim.onclick = closeReact;
   const bar = document.createElement('div'); bar.className = 'react';
@@ -1492,7 +1541,8 @@ function openReact(el){
     const b = e.target.closest('button'); if (!b) return;
     const em = b.textContent;
     m.tb = m.tb || {};
-    if (m.tb[S.sender] === em) delete m.tb[S.sender]; else m.tb[S.sender] = em;
+    if (m.tb[S.sender] === em){ delete m.tb[S.sender]; famPatch(m, {['tb.' + S.sender]: FAM.fb ? FAM.fb.deleteField() : null}); }
+    else { m.tb[S.sender] = em; famPatch(m, {['tb.' + S.sender]: em}); }
     save(); closeReact(); renderChat();
     reactBack(m, em);
   };
@@ -1570,6 +1620,7 @@ shBody.addEventListener('click', e => {
   if (t.dataset.act === 'reset'){ resetAll(); return; }
   if (t.dataset.act === 'brain'){ startBrain(true); return; }
   if (t.dataset.act === 'install'){ showInstall(); return; }
+  if (t.dataset.act === 'leave'){ if (t.dataset.armed){ famLeave(); } else { t.dataset.armed = 1; t.textContent = 'Tap again to switch'; } return; }
   if (t.dataset.tog){ toggle(t.dataset.tog); return; }
   const id = t.dataset.star || t.dataset.del || t.dataset.appeal;
   const it = S.items.find(x => x.id === id); if (!it) return;
@@ -1595,17 +1646,18 @@ shBody.addEventListener('click', e => {
 
 function openInfo(){
   shTitle.textContent = 'Details';
-  const members = ['artin','elsa','santa','elfie','rudolph','wallet'];
-  shBody.innerHTML = `<div class="bigav"><div class="stack">${avHTML('artin')}${avHTML('santa')}${avHTML('elsa')}</div><h2>🎄 Wishlist HQ</h2><div class="small">6 people · est. this Christmas</div></div>
-    <div class="members">${members.map(k => `<div class="member">${avHTML(k)}<div><b>${NAME[k]}</b><span class="small">${KIDS.includes(k) ? `Nice score ${S.nice[k]}/100 · ${(c => c + (c === 1 ? ' wish' : ' wishes'))(S.items.filter(x => x.who === k).length)}` : ROLE[k]}</span></div></div>`).join('')}</div>
+  const members = FAM.on ? ['artin','elsa','maman','yasi','santa','elfie','rudolph','wallet'] : ['artin','elsa','santa','elfie','rudolph','wallet'];
+  shBody.innerHTML = `<div class="bigav"><div class="stack">${avHTML('artin')}${avHTML('santa')}${avHTML('elsa')}</div><h2>🎄 Wishlist HQ</h2><div class="small">${members.length} people · est. this Christmas</div></div>
+    <div class="members">${members.map(k => `<div class="member">${avHTML(k)}<div><b>${NAME[k]}</b><span class="small">${isAdult(k) ? (FAM.members[k] ? 'Family' : 'Not joined yet') : KIDS.includes(k) ? `Nice score ${S.nice[k]}/100 · ${(c => c + (c === 1 ? ' wish' : ' wishes'))(S.items.filter(x => x.who === k).length)}` : ROLE[k]}</span></div></div>`).join('')}</div>
     <div class="members">
       
       ${isStandalone() || window.claude ? '' : `<div class="toggle"><span>📲 Add to Home Screen</span><button class="chip" data-act="install">How?</button></div>`}
       <div class="toggle"><span>❄️ Snow</span><button class="sw ${S.snow ? 'on' : ''}" data-tog="snow" aria-label="Snow"></button></div>
       <div class="toggle"><span>🔄 Faces on the wrong people? Swap them</span><button class="sw ${S.swap ? 'on' : ''}" data-tog="swap" aria-label="Swap faces"></button></div>
     </div>
+    ${FAM.on ? `<div class="members"><div class="toggle"><span>📱 This phone is ${esc(NAME[FAM.me])}</span><span class="small">Family code ${esc(FAM.code)}</span></div></div>` : ''}
     <button class="bigbtn" data-act="share">📤 Send lists to the parents</button>
-    <button class="bigbtn ghost" data-act="reset">Clear chat & wishlists</button>`;
+    ${FAM.on ? `<button class="bigbtn ghost" data-act="leave">Switch person on this phone</button>` : `<button class="bigbtn ghost" data-act="reset">Clear chat & wishlists</button>`}`;
   openSheet('info');
 }
 function toggle(k){
@@ -1812,6 +1864,275 @@ function brainUI(){
 }
 
 /* ============================================================
+   Family chat: everyone's phone in one live group (Firebase).
+   Without a Firebase config the app keeps working on its own, like before.
+   ============================================================ */
+const PEOPLE = ['artin', 'elsa', 'maman', 'yasi'];
+const ADULTS = ['maman', 'yasi'];
+const isAdult = k => ADULTS.includes(k);
+Object.assign(NAME, {maman:'Maman', yasi:'Yasi'});
+Object.assign(SHORT, {maman:'Maman', yasi:'Yasi'});
+var FAM = {on:false, fb:null, db:null, code:null, me:null, members:{}, typing:{}, local:[], seen:new Set(), lastItems:{}, lastNice:{}, ready:false, blobs:{}};
+const famCfg = () => window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId ? window.FIREBASE_CONFIG : null;
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const me = () => FAM.on ? FAM.me : S.sender;
+
+/* family codes look like SNOW-4821-ELF: easy to type, hard to guess */
+const CODE_WORDS = ['SNOW','ELF','STAR','BELL','SLED','TREE','GIFT','MINT','COCOA','FROST','JOLLY','HOLLY','PINE','CANDY','RUDY','MERRY','TINSEL','COOKIE','SCARF','MITTEN'];
+const makeCode = () => `${rnd(CODE_WORDS)}-${1000 + Math.floor(Math.random() * 9000)}-${rnd(CODE_WORDS)}`;
+const cleanCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+function famRef(...p){ return FAM.fb.doc(FAM.db, 'families', FAM.code, ...p); }
+function famCol(...p){ return FAM.fb.collection(FAM.db, 'families', FAM.code, ...p); }
+
+async function famLoad(){
+  if (FAM.fb) return FAM.fb;
+  FAM.fb = await import('./vendor/firebase.js');
+  const fb = FAM.fb, app = fb.initializeApp(famCfg());
+  FAM.auth = fb.getAuth(app);
+  try { FAM.db = fb.initializeFirestore(app, {localCache: fb.persistentLocalCache({tabManager: fb.persistentMultipleTabManager()})}); }
+  catch(e){ FAM.db = fb.initializeFirestore(app, {localCache: fb.memoryLocalCache()}); }
+  if (window.FB_EMULATOR){
+    fb.connectAuthEmulator(FAM.auth, 'http://' + window.FB_EMULATOR.auth, {disableWarnings:true});
+    const [h, port] = window.FB_EMULATOR.firestore.split(':'); fb.connectFirestoreEmulator(FAM.db, h, +port);
+  }
+  await new Promise(res => { const off = fb.onAuthStateChanged(FAM.auth, u => { off(); res(u); }); });
+  if (!FAM.auth.currentUser){
+    for (let i = 0; i < 3 && !FAM.auth.currentUser; i++){ try { await fb.signInAnonymously(FAM.auth); } catch(e){ await new Promise(r => setTimeout(r, 1500)); } }
+  }
+  return fb;
+}
+
+/* ---------- live sync ---------- */
+async function famStart(){
+  const fb = await famLoad();
+  FAM.code = S.fam.code; FAM.me = S.fam.me; FAM.on = true;
+  S.sender = FAM.me; document.documentElement.classList.add('fam');
+  renderHeader(); renderMe();
+  fb.onSnapshot(fb.query(famCol('messages'), fb.orderBy('ts'), fb.limitToLast(300)), snap => {
+    const fresh = new Set(), first = !FAM.ready;
+    const msgs = snap.docs.map(d => { const m = Object.assign({id:d.id}, d.data()); if (!FAM.seen.has(d.id)){ FAM.seen.add(d.id); if (!first) fresh.add(d.id); } return m; });
+    S.msgs = msgs; FAM.ready = true;
+    for (const id of fresh){ const m = msgs.find(x => x.id === id); if (m && m.by !== FAM.auth.currentUser.uid && m.from !== 'sys' && sheetOpen) banner(m.from, m.kind === 'img' && !m.text ? '📷 Photo' : m.text); }
+    renderChat(fresh);
+  }, () => {});
+  fb.onSnapshot(famRef('state', 'main'), d => {
+    const st = d.data() || {};
+    const items = st.items || {};
+    S.items = Object.values(items).filter(Boolean).sort((a, b) => a.ts - b.ts);
+    S.nice = Object.assign({artin:50, elsa:50}, st.nice || {});
+    FAM.lastItems = {}; for (const it of S.items) FAM.lastItems[it.id] = JSON.stringify(it);
+    FAM.lastNice = Object.assign({}, S.nice);
+    if (sheetOpen === 'lists') renderLists();
+  }, () => {});
+  fb.onSnapshot(famCol('members'), snap => {
+    snap.docs.forEach(d => { FAM.members[d.id] = d.data(); });
+    renderHeader(); renderMe(); if (FAM.ready) renderChat();
+  }, () => {});
+  fb.onSnapshot(famCol('typing'), snap => {
+    snap.docs.forEach(d => { FAM.typing[d.id] = d.data().until || 0; });
+    renderRemoteTyping();
+  }, () => {});
+  setInterval(renderRemoteTyping, 1500);
+}
+
+/* what used to be local-only now goes to the family */
+function famAddMsg(m, quiet){
+  m.ts = Date.now();
+  if (m.local){ m.id = 'l' + newId(); FAM.local.push(m); if (!quiet) renderChat(new Set([m.id])); return m; }
+  const id = newId(); m.id = id; m.by = FAM.auth.currentUser ? FAM.auth.currentUser.uid : '';
+  const data = {}; for (const k in m) if (m[k] !== undefined && k !== 'id') data[k] = m[k];
+  FAM.fb.setDoc(famRef('messages', id), data).catch(() => {});
+  return m;
+}
+function famPatch(m, fields){ if (FAM.on && m && !String(m.id).startsWith('l')) FAM.fb.updateDoc(famRef('messages', String(m.id)), fields).catch(() => {}); }
+function famPush(){
+  if (!FAM.on || !FAM.ready) return;
+  const upd = {}; let n = 0; const cur = {};
+  for (const it of S.items) cur[it.id] = JSON.stringify(it);
+  for (const id in cur) if (FAM.lastItems[id] !== cur[id]){ upd['items.' + id] = JSON.parse(cur[id]); n++; }
+  for (const id in FAM.lastItems) if (!(id in cur)){ upd['items.' + id] = FAM.fb.deleteField(); n++; }
+  for (const k of KIDS){ const d = (S.nice[k] ?? 50) - (FAM.lastNice[k] ?? 50); if (d){ upd['nice.' + k] = FAM.fb.increment(d); n++; } }
+  if (!n) return;
+  FAM.lastItems = cur; FAM.lastNice = Object.assign({}, S.nice);
+  FAM.fb.updateDoc(famRef('state', 'main'), upd).catch(() => {});
+}
+let typingSent = 0;
+function famTyping(who, ms){
+  if (!FAM.on) return;
+  if (ms && who === FAM.me && Date.now() - typingSent < 2500) return;
+  if (who === FAM.me) typingSent = ms ? Date.now() : 0;
+  FAM.fb.setDoc(famRef('typing', who), {until: ms ? Date.now() + ms : 0}).catch(() => {});
+}
+function renderRemoteTyping(){
+  if (!FAM.on) return;
+  let box = document.getElementById('rtyping');
+  if (!box){ box = document.createElement('div'); box.id = 'rtyping'; }
+  const now = Date.now();
+  const who = Object.keys(FAM.typing).filter(k => k !== FAM.me && FAM.typing[k] > now && !(typingEl && typingEl.dataset.from === k));
+  box.innerHTML = who.map(k => `<div class="row them tail gap typing">${avHTML(k)}<div class="col"><div class="who">${esc(NAME[k] || k)}</div><div class="bubble"><span></span><span></span><span></span></div></div></div>`).join('');
+  if (box.parentNode !== chat || box !== chat.lastElementChild) chat.appendChild(box);
+  if (who.length) scrollDown();
+}
+
+/* ---------- photos ---------- */
+async function shrinkPhoto(file, max, q){
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', q);
+  } finally { URL.revokeObjectURL(url); }
+}
+function pickPhoto(){
+  return new Promise(res => {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = () => res(inp.files && inp.files[0] || null);
+    inp.click();
+  });
+}
+async function sendPhoto(){
+  const f = await pickPhoto(); if (!f) return;
+  let src = await shrinkPhoto(f, FAM.on ? 1080 : 720, .72);
+  if (src.length > 850000) src = await shrinkPhoto(f, 800, .6);
+  const who = me();
+  addMsg({from: who, kind:'img', src, text:''});
+  if (Math.random() < .55) talk([fresh1(isAdult(who) ? PHOTO_ADULT : PHOTO_KID)], who);
+}
+const PHOTO_KID = [
+  ['elfie', "pic received. the elves are zooming in 🔍"], ['santa', "Santa saved that one. Santa saves everything."],
+  ['rudolph', "nice. I'd have done a better angle."], ['elfie', "is that a hint about a wish or"], ['santa', "Lovely! Santa is putting it on the North Pole fridge. 📌"]];
+const PHOTO_ADULT = [
+  ['santa', "Thanks for the photo, {n}! Santa is adding it to the family album. 📸"], ['elfie', "{n} sending pics. this chat is getting fancy"],
+  ['rudolph', "good photo. better than the elves' photos."]];
+/* blob URLs keep big photos cheap to redraw */
+function imgSrc(m){
+  const s = m.src || '';
+  if (!s.startsWith('data:')) return s;
+  if (!FAM.blobs[m.id]){ try { const [h, b] = s.split(','); const bin = atob(b); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); FAM.blobs[m.id] = URL.createObjectURL(new Blob([u], {type: h.slice(5, h.indexOf(';'))})); } catch(e){ return s; } }
+  return FAM.blobs[m.id];
+}
+
+/* ---------- avatars for the grown-ups ---------- */
+function adultAv(k, cls){
+  const p = FAM.members[k] && FAM.members[k].photo;
+  return p ? `<span class="av kid adult ${k} ${cls}" aria-hidden="true"><img src="${p}" alt=""></span>`
+           : `<span class="av kid adult ${k} ${cls} letter" aria-hidden="true">${esc((NAME[k] || '?')[0])}</span>`;
+}
+
+/* ---------- Santa & co. reply to Maman and Yasi too ---------- */
+const ADULT_HELLO = [
+  ['santa', "Hi {n}! The kids have been keeping Santa very busy 😅"], ['elfie', "hi {n}. your kids' lists are... a lot"],
+  ['santa', "{n}! Good to see you. Santa could use a grown-up in here."], ['rudolph', "hi {n}. help."]];
+const ADULT_LINES = [
+  ['santa', "Hi {n}! Santa is keeping an eye on these two for you 👀"], ['elfie', "{n} is here. everyone act normal"],
+  ['rudolph', "hello {n}. they've been asking for a lot of stuff."], ['santa', "Noted, {n}. Santa will pass that along to the elves."],
+  ['elfie', "ok {n}, the elves heard that"], ['santa', "{n}! Santa was hoping you'd show up. These lists need a grown-up."]];
+function adultCanned(who, text){
+  const lc = text.toLowerCase();
+  if (GREET[0].k.test(lc)){ talk([fresh1(ADULT_HELLO)], who); return; }
+  for (const g of QA) if (g.k.test(lc)){ const l = fresh1(g.a); talk([[l[0], l[1].replace('{countdown}', daysLeft().replace(/^⏳ /, ''))]], who); return; }
+  talk([fresh1(ADULT_LINES)], who);
+}
+function talkingToPerson(who, text){
+  const lc = text.toLowerCase();
+  if (/\b(santa|elfie|elf|rudolph|wallet)\b/.test(lc) || WISH_CUE.test(lc) || URL_RE.test(text)) return false;
+  const people = {artin:/\bartin\b/, elsa:/\belsa\b/, maman:/\b(maman|mom|mommy|mama)\b/, yasi:/\b(yasi|aunt|khale)\b/};
+  return Object.keys(people).some(k => k !== who && people[k].test(lc));
+}
+function adultThink(who, text){
+  const lc = text.toLowerCase();
+  const named = /\b(santa|elfie|elf|rudolph|wallet)\b/.test(lc);
+  const toKid = /\b(artin|elsa)\b/.test(lc) && !named;
+  if (Math.random() > (named ? 1 : toKid ? .35 : .75)) return;
+  smartThink(who, text).then(ok => { if (!ok) adultCanned(who, text); }, () => adultCanned(who, text));
+}
+
+/* ---------- setup: family code + who's this phone ---------- */
+function setupHTML(step, err){
+  const tile = k => `<button class="who-tile" data-who="${k}">${k === 'maman' || k === 'yasi' ? adultAv(k, '') : `<span class="av kid ${k}">${cartoonFace(k)}</span>`}<b>${NAME[k]}</b></button>`;
+  if (step === 'code') return `<div class="setup-card"><img src="icon-180.png" alt="" class="setup-icon"><h2>Wishlist HQ</h2>
+    <p>Type your family code to join the chat.</p>
+    <input id="famCode" class="setup-input" placeholder="SNOW-1234-ELF" autocapitalize="characters" autocomplete="off" spellcheck="false" value="${esc(S.fam && S.fam.code || '')}">
+    ${err ? `<p class="setup-err">${esc(err)}</p>` : ''}
+    <button class="bigbtn" data-setup="join">Join</button>
+    <button class="setup-link" data-setup="create">Start a new family chat</button></div>`;
+  if (step === 'created') return `<div class="setup-card"><h2>Your family code</h2><div class="setup-code">${esc(S.fam.code)}</div>
+    <p>Everyone types this code once in their app. Keep it in the family.</p>
+    <button class="bigbtn" data-setup="copy">Copy code</button><button class="bigbtn ghost2" data-setup="next">Next</button></div>`;
+  if (step === 'who') return `<div class="setup-card"><h2>Who's this phone?</h2><div class="who-grid">${PEOPLE.map(tile).join('')}</div></div>`;
+  if (step === 'photo') return `<div class="setup-card"><h2>Hi ${esc(NAME[S.fam.me])}!</h2><p>Add a photo so everyone sees your face in the chat.</p>
+    <div class="setup-photo">${adultAv(S.fam.me, '')}</div>
+    <button class="bigbtn" data-setup="photo">Choose a photo</button><button class="setup-link" data-setup="done">Skip</button></div>`;
+  return '';
+}
+let setupEl = null;
+function showSetup(step, err){
+  if (!setupEl){ setupEl = document.createElement('div'); setupEl.className = 'setup'; document.getElementById('phone').appendChild(setupEl); setupEl.addEventListener('click', setupClick); }
+  setupEl.innerHTML = setupHTML(step, err); setupEl.dataset.step = step;
+}
+async function setupClick(e){
+  const b = e.target.closest('[data-setup],[data-who]'); if (!b) return;
+  S.fam = S.fam || {};
+  try {
+    if (b.dataset.setup === 'join'){
+      const code = cleanCode(document.getElementById('famCode').value);
+      if (code.length < 6) return showSetup('code', 'That code looks too short.');
+      b.disabled = true; b.textContent = 'Checking…';
+      await famLoad(); FAM.code = code;
+      const d = await FAM.fb.getDoc(famRef());
+      if (!d.exists()) return showSetup('code', "Hmm, that code didn't work. Check it and try again.");
+      S.fam.code = code; save(); showSetup('who');
+    }
+    if (b.dataset.setup === 'create'){
+      b.disabled = true; await famLoad();
+      const code = makeCode(); FAM.code = code;
+      await FAM.fb.setDoc(famRef(), {created: Date.now()});
+      await FAM.fb.setDoc(famRef('state', 'main'), {items:{}, nice:{artin:50, elsa:50}});
+      S.fam.code = code; S.fam.created = true; save(); showSetup('created');
+    }
+    if (b.dataset.setup === 'copy'){ try { await navigator.clipboard.writeText(S.fam.code); b.textContent = 'Copied ✓'; } catch(err){ b.textContent = S.fam.code; } }
+    if (b.dataset.setup === 'next') showSetup('who');
+    if (b.dataset.who){
+      S.fam.me = b.dataset.who; save();
+      await FAM.fb.setDoc(famRef('members', S.fam.me), {name: NAME[S.fam.me], joined: Date.now()}, {merge:true});
+      if (isAdult(S.fam.me)) showSetup('photo'); else setupDone();
+    }
+    if (b.dataset.setup === 'photo'){
+      const f = await pickPhoto(); if (!f) return;
+      const src = await shrinkPhoto(f, 256, .8);
+      FAM.members[S.fam.me] = Object.assign({}, FAM.members[S.fam.me], {photo: src});
+      await FAM.fb.setDoc(famRef('members', S.fam.me), {photo: src}, {merge:true});
+      setupDone();
+    }
+    if (b.dataset.setup === 'done') setupDone();
+  } catch(err){ showSetup(setupEl.dataset.step || 'code', "Couldn't connect. Check the internet and try again."); }
+}
+async function setupDone(){
+  if (setupEl){ setupEl.remove(); setupEl = null; }
+  S.msgs = []; S.items = []; save();
+  await famStart();
+  if (S.fam.created && !S.fam.welcomed){
+    S.fam.welcomed = true; save();
+    addMsg({from:'sys', text:`${NAME[FAM.me]} started the family chat.`});
+    bot('santa', "Ho ho ho! The whole family is here now. Kids, type a wish or paste a link and Santa adds it to your list.");
+    bot('elfie', "and I'll judge it. grown-ups too");
+    bot('santa', "Also. Santa learned a new phrase from your dad: 'na na na nemikhad.' Santa will be using it. A lot. 😌");
+  } else if (!S.fam.hello){
+    S.fam.hello = true; save();
+    addMsg({from:'sys', text:`${NAME[FAM.me]} joined the chat.`});
+    if (!isAdult(FAM.me)) bot('santa', `Hi ${NAME[FAM.me]}! 🎅 Type a wish or paste a link and Santa adds it to your list.`);
+    else bot('elfie', `${NAME[FAM.me]} is here. everyone act normal`);
+  }
+}
+function famLeave(){
+  S.fam = null; FAM.on = false; save();
+  location.reload();
+}
+
+/* ============================================================
    Home-screen app
    ============================================================ */
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
@@ -1822,7 +2143,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localh
 function offerInstall(){
   if (isStandalone() || S.installOffered || window.claude) return;
   S.installOffered = true; save();
-  bot('elfie', "pro tip: put this chat on your home screen so Santa's always one tap away 📲", {kind:'chips', chips:[{label:'📲 Show me how', act:'install'}, {label:'Later', act:'later'}]});
+  bot('elfie', "pro tip: put this chat on your home screen so Santa's always one tap away 📲", {kind:'chips', local:true, chips:[{label:'📲 Show me how', act:'install'}, {label:'Later', act:'later'}]});
 }
 async function showInstall(){
   if (installPrompt){ installPrompt.prompt(); try { await installPrompt.userChoice; } catch(e){} installPrompt = null; return; }
@@ -1871,7 +2192,11 @@ function intro(){
   fit();
 })();
 renderHeader(); renderMe(); autosize(); snow.toggle(S.snow);
-if (!S.msgs.length) intro();
+if (famCfg()){
+  if (S.fam && S.fam.code && S.fam.me){ famStart().catch(() => {}); if (!S.installOffered) setTimeout(offerInstall, 4000); }
+  else showSetup('code');
+}
+else if (!S.msgs.length) intro();
 else {
   renderChat();
   if (!S.v2){
