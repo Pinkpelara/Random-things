@@ -1879,7 +1879,7 @@ const me = () => FAM.on ? FAM.me : S.sender;
 
 /* family codes look like SNOW-4821-ELF: easy to type, hard to guess */
 const CODE_WORDS = ['SNOW','ELF','STAR','BELL','SLED','TREE','GIFT','MINT','COCOA','FROST','JOLLY','HOLLY','PINE','CANDY','RUDY','MERRY','TINSEL','COOKIE','SCARF','MITTEN'];
-const makeCode = () => `${rnd(CODE_WORDS)}-${1000 + Math.floor(Math.random() * 9000)}-${rnd(CODE_WORDS)}`;
+const makeCode = () => `${rnd(CODE_WORDS)}-${100000 + Math.floor(Math.random() * 900000)}-${rnd(CODE_WORDS)}`;
 const cleanCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 function famRef(...p){ return FAM.fb.doc(FAM.db, 'families', FAM.code, ...p); }
@@ -2055,7 +2055,7 @@ function setupHTML(step, err){
   const tile = k => `<button class="who-tile" data-who="${k}">${k === 'maman' || k === 'yasi' ? adultAv(k, '') : `<span class="av kid ${k}">${cartoonFace(k)}</span>`}<b>${NAME[k]}</b></button>`;
   if (step === 'code') return `<div class="setup-card"><img src="icon-180.png" alt="" class="setup-icon"><h2>Wishlist HQ</h2>
     <p>Type your family code to join the chat.</p>
-    <input id="famCode" class="setup-input" placeholder="SNOW-1234-ELF" autocapitalize="characters" autocomplete="off" spellcheck="false" value="${esc(S.fam && S.fam.code || '')}">
+    <input id="famCode" class="setup-input" placeholder="SNOW-123456-ELF" autocapitalize="characters" autocomplete="off" spellcheck="false" value="${esc(S.fam && S.fam.code || '')}">
     ${err ? `<p class="setup-err">${esc(err)}</p>` : ''}
     <button class="bigbtn" data-setup="join">Join</button>
     <button class="setup-link" data-setup="create">Start a new family chat</button></div>`;
