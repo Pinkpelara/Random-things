@@ -1301,7 +1301,7 @@ Grown-ups in the chat: Maman (the kids' mom) and Yasi (the kids' aunt). When a g
 How to text: the kids are 10-13 and can smell a bot instantly, so write exactly like a real person texting in a family group chat.
 - Be actually funny: tease, exaggerate, and make callbacks to the kid's wishes and quirks (Artin's basketball and "why did u spend so much", Elsa's squishies, messy room and mornings). A flat answer like "ok" or "plants" is a fail: never reply with only one or two words.
 - Short: most texts are under 20 words, in plain everyday words.
-- Read the whole newest message carefully and answer what they actually said, specifically, talking to THAT person. Never ask for something they already told you. Don't mix up whose wish is whose. Follow up on earlier messages and never repeat a line already in the chat.
+- Read the whole newest message carefully and answer what they actually said, specifically, talking to THAT person. Never ask for something they already told you: if they say "can I tell you a secret? I got Maman a scarf", react to the scarf, don't ask what the secret is. Don't mix up whose wish is whose. Follow up on earlier messages and never repeat a line already in the chat.
 - At most one emoji per text, and many texts have none.
 - Never: "Ah,"/"Oh,"/"Well," openers, "Ho ho ho" (unless it's the first message in a while), em dashes, *actions in asterisks*, hashtags, quotation-mark titles, "!!" chains, explaining the joke, or ending with a question every time.
 - No try-hard slang: never "bestie", "slay", "it's giving", "in this economy", "vibes", "iconic", "main character", "make it make sense", "no cap", "fr fr".
@@ -1330,7 +1330,9 @@ const SMART_CHAIN = [
   {id:'ovh-gptoss',   base:OVH,  model:'gpt-oss-120b',                        ms:15000},
   {id:'ovh-gptoss20', base:OVH,  model:'gpt-oss-20b',                         ms:12000},
   {id:'ovh-mistral',  base:OVH,  model:'Mistral-Small-3.2-24B-Instruct-2506', ms:12000},
-  {id:'llm7-gptoss',  base:LLM7, model:'gpt-oss:20b',                         ms:15000},
+  {id:'llm7-gptoss',  base:LLM7, model:'gpt-oss:20b',                         ms:15000},   // backup 1: LLM7
+  {id:'llm7-default', base:LLM7, model:'default',                             ms:15000},
+  {id:'pollinations', url:'https://text.pollinations.ai/openai', model:'openai', ms:35000, nojson:true},   // backup 2: Pollinations
 ];
 const TALK_CHAIN = [
   {id:'llm7-default', base:LLM7, model:'default',                    ms:8000},
@@ -1366,11 +1368,11 @@ const restFor = (p, ms) => { rest[p.id] = Date.now() + ms; };
 async function callChat(p, prompt, ms, wantJSON){
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
   try {
-    const r = await fetch(p.base + '/chat/completions', {
+    const r = await fetch(p.url || (p.base + '/chat/completions'), {
       method:'POST', headers:{'Content-Type':'application/json'}, signal: ctl.signal,
       body: JSON.stringify({model:p.model, messages:[{role:'user', content:prompt}], temperature:0.8, max_tokens: wantJSON ? (/gpt-oss/.test(p.model) ? 1400 : 700) : 120,
-        ...(/gpt-oss/.test(p.model) ? {reasoning_effort:'low'} : {}),
-        ...(wantJSON ? {response_format:{type:'json_object'}} : {})}),
+        ...(/gpt-oss/.test(p.model) && p.base === OVH ? {reasoning_effort:'low'} : {}),
+        ...(wantJSON && !p.nojson ? {response_format:{type:'json_object'}} : {})}),
     });
     if (!r.ok) throw {status:r.status};
     const j = await r.json();
@@ -1388,7 +1390,8 @@ const voiceOf = n => { n = String(n || '').toLowerCase(); return /santa/.test(n)
 /* turn whatever shape the model used into {replies, add, remove, update, nice, pic}, or null if unusable */
 function normalizeSmart(r){
   if (!r || typeof r !== 'object') return null;
-  let reps = r.replies || r.messages || r.chat || r.responses;
+  let reps = r.replies || r.messages || r.chat || r.responses || r.msg || r.msgs || r.reply_list;
+  if (!reps && (r.from || r.sender) && (r.text || r.message)) reps = [r];
   if (!Array.isArray(reps) && typeof r.reply === 'string'){ const m = r.reply.match(/^\s*(\w[\w' ]*?)\s*:\s*(.+)$/s); reps = [{from: m ? m[1] : 'santa', text: m ? m[2] : r.reply}]; }
   if (!Array.isArray(reps)) return null;
   const replies = reps.map(x => { if (!x || typeof x !== 'object') return null; const from = voiceOf(x.from || x.sender || x.name || x.role); return {from, text: from && humanize(x.text || x.message || x.content, from)}; })
@@ -2325,7 +2328,7 @@ async function answerPending(p){
   await q;
   showTyping('santa', p.chat);
   let r = null;
-  try { r = await aiAnswer(input); } finally { hideTyping(); }
+  try { r = await aiAnswer(input, Date.now() + 50000); } finally { hideTyping(); }
   if (!r) return false;
   FAM.replyChat = p.chat;
   applySmart(r, p.who, p.text);
