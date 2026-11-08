@@ -146,6 +146,8 @@ header{
 .brainbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c62828,#2e7d32);transition:width .3s}
 .sharebox{width:100%;height:220px;border-radius:12px;border:1px solid var(--field-line);background:var(--card);color:var(--text);font:inherit;font-size:13px;padding:10px;resize:none}
 html.fam .me-btn::after{display:none}
+.pendbar{position:relative;z-index:19;background:#fff7e0;color:#7a5a00;font-size:12px;text-align:center;padding:7px 14px;border-bottom:.5px solid var(--hair)}
+.pendbar[hidden]{display:none}
 .convos{position:absolute;inset:0;z-index:30;background:var(--bg);overflow-y:auto;padding-top:env(safe-area-inset-top)}
 @media (min-width:700px) and (min-height:760px){.convos{padding-top:44px}}
 .convos-head{display:flex;align-items:flex-end;justify-content:space-between;padding:12px 16px 6px}
@@ -840,9 +842,10 @@ function send(){
   const first = parseLine(text.split('\n')[0]);
   const m = {from: who, text};
   if (first.url){ m.url = first.url; m.domain = first.domain; m.linkTitle = first.title; const mm = text.match(URL_RE); m.rawUrl = mm ? mm[1].replace(/[).,!]+$/,'') : ''; }
-  addMsg(m);
+  const sent = addMsg(m);
   if (FAM.on) famTyping(who, 0, cid);
   if (kind === 'dm') return;                                   // a private chat between two people: Santa stays out
+  if (FAM.on){ famEnqueue(sent); return; }                     // Santa always answers, for real, even if it takes a moment
   if (isAdult(who)){ adultThink(who, text, kind === 'santa'); return; }
   if (FAM.on && kind === 'group' && talkingToPerson(who, text) && Math.random() > .3) return;   // talking to a person, not to Santa
   const back = () => { if (FAM.on) FAM.replyChat = cid; think(who, text); };
@@ -1298,7 +1301,7 @@ Grown-ups in the chat: Maman (the kids' mom) and Yasi (the kids' aunt). When a g
 How to text: the kids are 10-13 and can smell a bot instantly, so write exactly like a real person texting in a family group chat.
 - Be actually funny: tease, exaggerate, and make callbacks to the kid's wishes and quirks (Artin's basketball and "why did u spend so much", Elsa's squishies, messy room and mornings). A flat answer like "ok" or "plants" is a fail: never reply with only one or two words.
 - Short: most texts are under 20 words, in plain everyday words.
-- Answer what the kid actually said, specifically, talking to THAT kid. Don't mix up whose wish is whose. Follow up on earlier messages and never repeat a line already in the chat.
+- Read the whole newest message carefully and answer what they actually said, specifically, talking to THAT person. Never ask for something they already told you. Don't mix up whose wish is whose. Follow up on earlier messages and never repeat a line already in the chat.
 - At most one emoji per text, and many texts have none.
 - Never: "Ah,"/"Oh,"/"Well," openers, "Ho ho ho" (unless it's the first message in a while), em dashes, *actions in asterisks*, hashtags, quotation-mark titles, "!!" chains, explaining the joke, or ending with a question every time.
 - No try-hard slang: never "bestie", "slay", "it's giving", "in this economy", "vibes", "iconic", "main character", "make it make sense", "no cap", "fr fr".
@@ -1323,9 +1326,11 @@ tier: 1 cheap … 4 very expensive. nice: small changes from -5 to 5 for manners
 const OVH = 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1';
 const LLM7 = 'https://api.llm7.io/v1';
 const SMART_CHAIN = [
-  {id:'ovh-llama',   base:OVH, model:'Meta-Llama-3_3-70B-Instruct',         ms:9000},
-  {id:'ovh-mistral', base:OVH, model:'Mistral-Small-3.2-24B-Instruct-2506', ms:9000},
-  {id:'ovh-gptoss',  base:OVH, model:'gpt-oss-120b',                        ms:14000},
+  {id:'ovh-llama',    base:OVH,  model:'Meta-Llama-3_3-70B-Instruct',         ms:12000},
+  {id:'ovh-gptoss',   base:OVH,  model:'gpt-oss-120b',                        ms:15000},
+  {id:'ovh-gptoss20', base:OVH,  model:'gpt-oss-20b',                         ms:12000},
+  {id:'ovh-mistral',  base:OVH,  model:'Mistral-Small-3.2-24B-Instruct-2506', ms:12000},
+  {id:'llm7-gptoss',  base:LLM7, model:'gpt-oss:20b',                         ms:15000},
 ];
 const TALK_CHAIN = [
   {id:'llm7-default', base:LLM7, model:'default',                    ms:8000},
@@ -1363,7 +1368,8 @@ async function callChat(p, prompt, ms, wantJSON){
   try {
     const r = await fetch(p.base + '/chat/completions', {
       method:'POST', headers:{'Content-Type':'application/json'}, signal: ctl.signal,
-      body: JSON.stringify({model:p.model, messages:[{role:'user', content:prompt}], temperature:0.8, max_tokens: wantJSON ? 700 : 120,
+      body: JSON.stringify({model:p.model, messages:[{role:'user', content:prompt}], temperature:0.8, max_tokens: wantJSON ? (/gpt-oss/.test(p.model) ? 1400 : 700) : 120,
+        ...(/gpt-oss/.test(p.model) ? {reasoning_effort:'low'} : {}),
         ...(wantJSON ? {response_format:{type:'json_object'}} : {})}),
     });
     if (!r.ok) throw {status:r.status};
@@ -1391,14 +1397,19 @@ function normalizeSmart(r){
   if (!replies.length && !pic) return null;
   return {replies, pic, add: Array.isArray(r.add) ? r.add : [], remove: Array.isArray(r.remove) ? r.remove : [], update: Array.isArray(r.update) ? r.update : [], nice: r.nice && typeof r.nice === 'object' ? r.nice : null};
 }
-function smartInput(who, text){
+function smartInput(who, text, chat, upto){
   const lists = S.items.map(x => ({id:x.id, who:x.who, title:x.title, verdict:x.verdict, prio:x.prio, tier:x.tier}));
-  const transcript = S.msgs.filter(m => m.from !== 'sys' && m.kind !== 'stage' && m.text).slice(-16, -1).map(m => `${SHORT[m.from] || m.from}: ${m.text}`).join('\n');
+  let hist = S.msgs.filter(m => m.from !== 'sys' && m.kind !== 'stage' && (m.text || m.kind === 'img'));
+  if (FAM.on && chat) hist = hist.filter(m => chatOf(m) === chat && (!upto || m.ts < upto)); else hist = hist.slice(0, -1);
+  const transcript = hist.slice(-15).map(m => `${SHORT[m.from] || m.from}: ${m.kind === 'img' && !m.text ? '(sent a photo)' : m.text}`).join('\n');
+  const where = !FAM.on || !chat || chatKind(chat) === 'group' ? 'This is the family group chat (Artin, Elsa, Maman, Yasi, plus Santa, Elfie, Rudolph and the Wallet).'
+    : `This is ${NAME[who]}'s private chat with Santa. Santa answers (Elfie or Rudolph may chime in). Nobody else in the family can see it.`;
   return `${AI_RULES}
 
 Now: ${new Date().toLocaleString()} · ${daysLeft().replace(/^⏳ /,'')}
 Nice scores (0-100): Artin ${S.nice.artin}, Elsa ${S.nice.elsa}
 Lists: ${JSON.stringify(lists)}
+${where}
 
 Recent chat:
 ${transcript}
@@ -1441,6 +1452,34 @@ function applySmart(r, who, text){
   r.replies.forEach(x => bot(x.from, x.text.slice(0, 320)));
   if (r.pic && !S.msgs.slice(-12).some(m => m.kind === 'img' && m.src === r.pic.src)) bot('santa', r.pic.cap, {kind:'img', src:r.pic.src});
 }
+/* ask the models (best first, hedged); resolves to a checked answer or null */
+async function aiAnswer(input, deadline){
+  deadline = deadline || Date.now() + 25000;
+if (navigator.onLine === false) return null;
+  // hedged: start the best model; if it hasn't answered after a few seconds, ask the next one too. First good answer wins.
+  const avail = SMART_CHAIN.filter(p => !resting(p));
+  if (!avail.length) return null;
+  const win = await new Promise(resolve => {
+    let pending = avail.length, done = false, started = 0;
+    const finish = r => { if (!done){ done = true; clearTimeout(cap); resolve(r); } };
+    const cap = setTimeout(() => finish(null), Math.max(3000, deadline - Date.now()));
+    const startNext = () => {
+      if (done || started >= avail.length) return;
+      const p = avail[started++];
+      const hedge = setTimeout(startNext, 4500);             // slow? ask the next one too
+      (async () => {
+        try {
+          const r = normalizeSmart(looseJSON(await callChat(p, input, p.ms, true)));
+          if (r){ if (!done) lastSource = p.model; finish(r); } else if (!done) restFor(p, 8000);
+        } catch(e){ if (!done) restFor(p, e && e.status === 429 ? 40000 : 8000); }
+        clearTimeout(hedge); startNext();                    // failed? go to the next one right away
+        if (--pending === 0) finish(null);
+      })();
+    };
+    startNext();
+  });
+  return win;
+}
 /* returns true if a smart model handled the message; false means "use the built-in brain" */
 async function smartThink(who, text){
   const input = smartInput(who, text), deadline = Date.now() + 20000, rc = FAM.replyChat;
@@ -1450,29 +1489,7 @@ async function smartThink(who, text){
       try { const r = normalizeSmart(await AI.json(input, {modelTier:'quick', cache:false})); if (r){ hideTyping(); FAM.replyChat = rc; applySmart(r, who, text); lastSource = 'Claude'; return true; } }
       catch(e){ if (['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(e && e.code)){ aiOff = true; document.documentElement.classList.remove('ai'); } }
     }
-    if (navigator.onLine === false) return false;
-    // hedged: start the best model; if it hasn't answered after a few seconds, ask the next one too. First good answer wins.
-    const avail = SMART_CHAIN.filter(p => !resting(p));
-    if (!avail.length) return false;
-    const win = await new Promise(resolve => {
-      let pending = avail.length, done = false, started = 0;
-      const finish = r => { if (!done){ done = true; clearTimeout(cap); resolve(r); } };
-      const cap = setTimeout(() => finish(null), Math.max(3000, deadline - Date.now()));
-      const startNext = () => {
-        if (done || started >= avail.length) return;
-        const p = avail[started++];
-        const hedge = setTimeout(startNext, 4500);             // slow? ask the next one too
-        (async () => {
-          try {
-            const r = normalizeSmart(looseJSON(await callChat(p, input, p.ms, true)));
-            if (r){ if (!done) lastSource = p.model; finish(r); } else if (!done) restFor(p, 20000);
-          } catch(e){ if (!done) restFor(p, e && e.status === 429 ? 60000 : 30000); }
-          clearTimeout(hedge); startNext();                    // failed? go to the next one right away
-          if (--pending === 0) finish(null);
-        })();
-      };
-      startNext();
-    });
+    const win = await aiAnswer(input, deadline);
     if (!win) return false;
     hideTyping(); FAM.replyChat = rc; applySmart(win, who, text); return true;
   } finally { hideTyping(); }
@@ -1973,6 +1990,14 @@ async function famStart(){
     snap.docs.forEach(d => { FAM.members[d.id] = d.data(); });
     renderHeader(); renderMe(); if (FAM.ready) renderChat();
   }, () => {});
+  fb.onSnapshot(famCol('pending'), snap => {
+    PEND.items = {};
+    snap.docs.forEach(d => { const p = d.data(); if (canSee(p.chat)) PEND.items[d.id] = p; });
+    renderPendingNote(); pumpPending();
+  }, () => {});
+  setInterval(() => { pumpPending(); renderPendingNote(); }, 3000);
+  addEventListener('online', () => pumpPending());
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) pumpPending(); });
   fb.onSnapshot(famCol('typing'), snap => {
     snap.docs.forEach(d => { FAM.typing[d.id] = d.data().until || 0; });
     renderRemoteTyping();
@@ -2046,8 +2071,9 @@ async function sendPhoto(){
   let src = await shrinkPhoto(f, FAM.on ? 1080 : 720, .72);
   if (src.length > 850000) src = await shrinkPhoto(f, 800, .6);
   const who = me();
-  addMsg({from: who, kind:'img', src, text:''});
-  if ((!FAM.on || chatKind(cid) !== 'dm') && Math.random() < .55) talk([fresh1(isAdult(who) ? PHOTO_ADULT : PHOTO_KID)], who);
+  const sentPhoto = addMsg({from: who, kind:'img', src, text:''});
+  if (FAM.on){ if (chatKind(cid) !== 'dm') famEnqueue(Object.assign({}, sentPhoto, {text: '(sent a photo)'})); }
+  else if (Math.random() < .55) talk([fresh1(isAdult(who) ? PHOTO_ADULT : PHOTO_KID)], who);
 }
 const PHOTO_KID = [
   ['elfie', "pic received. the elves are zooming in 🔍"], ['santa', "Santa saved that one. Santa saves everything."],
@@ -2239,10 +2265,78 @@ function renderConvos(){
 }
 function fmtShort(ts){ const d = new Date(ts), t = new Date(); return d.toDateString() === t.toDateString() ? fmtTime(ts) : d.toLocaleDateString([], {weekday:'short'}); }
 function openChat(c){
-  FAM.chat = c; FAM.view = 'chat';
+  FAM.chat = c; FAM.view = 'chat'; setTimeout(renderPendingNote, 0);
   if (convosEl) convosEl.hidden = true;
   closeSheet();
   renderHeader(); renderMe(); renderChat(); markRead(c); updateBadge();
+}
+
+/* ---------- guaranteed replies ----------
+   Every message to Santa goes into the family's shared "Santa owes a reply" queue.
+   Any family phone that's open picks it up (one at a time, with a lock), asks the AI,
+   and only removes it once the real answer is in the chat. If the AI is busy, it waits
+   and tries again: no canned or off-topic filler, ever. */
+const PEND = {items:{}, busy:false};
+function famEnqueue(m){
+  if (!FAM.on || !m || !m.id) return;
+  const p = {who: m.from, text: m.text || '', chat: chatOf(m), ts: m.ts, tries: 0, next: 0, lease: 0, by: ''};
+  PEND.items[m.id] = p;
+  FAM.fb.setDoc(famRef('pending', m.id), p).catch(() => {});
+  setTimeout(pumpPending, 30);
+}
+const myUid = () => FAM.auth && FAM.auth.currentUser ? FAM.auth.currentUser.uid : '';
+async function claimPending(id){
+  const ref = famRef('pending', id), uid = myUid();
+  try {
+    return await FAM.fb.runTransaction(FAM.db, async tx => {
+      const d = await tx.get(ref); if (!d.exists()) return null;
+      const p = d.data();
+      if ((p.lease || 0) > Date.now() && p.by !== uid) return null;   // another phone is answering it
+      if ((p.next || 0) > Date.now()) return null;                     // waiting before the next try
+      tx.update(ref, {lease: Date.now() + 60000, by: uid});
+      return p;
+    });
+  } catch(e){ return null; }
+}
+async function pumpPending(){
+  if (!FAM.on || !FAM.ready || PEND.busy || navigator.onLine === false) return;
+  const now = Date.now(), uid = myUid();
+  const due = Object.entries(PEND.items)
+    .filter(([id, p]) => (p.next || 0) <= now && !((p.lease || 0) > now && p.by !== uid))
+    .sort((a, b) => a[1].ts - b[1].ts);
+  if (!due.length) return;
+  PEND.busy = true;
+  const id = due[0][0];
+  try {
+    const p = await claimPending(id);
+    if (!p) return;
+    const ok = await answerPending(p);
+    if (ok){ await q; delete PEND.items[id]; await FAM.fb.deleteDoc(famRef('pending', id)).catch(() => {}); }
+    else {
+      const tries = (p.tries || 0) + 1;
+      const upd = {tries, lease: 0, by: '', next: Date.now() + Math.min(15000, 2500 * tries)};
+      Object.assign(PEND.items[id] || {}, upd);
+      await FAM.fb.updateDoc(famRef('pending', id), upd).catch(() => {});
+    }
+  } finally { PEND.busy = false; renderPendingNote(); setTimeout(pumpPending, 250); }
+}
+async function answerPending(p){
+  const input = smartInput(p.who, p.text, p.chat, p.ts);
+  await q;
+  showTyping('santa', p.chat);
+  let r = null;
+  try { r = await aiAnswer(input); } finally { hideTyping(); }
+  if (!r) return false;
+  FAM.replyChat = p.chat;
+  applySmart(r, p.who, p.text);
+  return true;
+}
+function renderPendingNote(){
+  let bar = document.getElementById('pendbar');
+  if (!bar){ bar = document.createElement('div'); bar.id = 'pendbar'; bar.className = 'pendbar'; document.querySelector('header').after(bar); }
+  const old = FAM.on && FAM.view === 'chat' && Object.values(PEND.items).some(p => p.chat === FAM.chat && Date.now() - p.ts > 15000);
+  bar.textContent = old ? "🎅 The North Pole connection is taking a moment. Your message is saved and Santa will answer." : '';
+  bar.hidden = !old;
 }
 
 /* ============================================================
