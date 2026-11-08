@@ -366,7 +366,7 @@ const KIDS = ['artin','elsa'];
 const NAME = {artin:'Artin', elsa:'Elsa', santa:'Santa', elfie:'Elfie the Elf', rudolph:'Rudolph', wallet:"Parents' Wallet"};
 const SHORT = {artin:'Artin', elsa:'Elsa', santa:'Santa', elfie:'Elfie', rudolph:'Rudolph', wallet:'Wallet'};
 const EMO = {santa:'🎅', elfie:'🧝', rudolph:'🦌', wallet:'💳'};
-const ROLE = {santa:'Head of Gift Approvals', elfie:'Chief Judging Officer 💅', rudolph:'Logistics & Sarcasm', wallet:'Is scared'};
+const ROLE = {santa:'Head of Gift Approvals', elfie:'Chief Judging Officer', rudolph:'Logistics & Sarcasm', wallet:'Is scared'};
 const other = k => k === 'artin' ? 'elsa' : 'artin';
 const rnd = a => a[Math.floor(Math.random()*a.length)];
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -452,49 +452,49 @@ function avHTML(k, cls=''){
    {n}=sender, {o}=sibling, {i}=item
    ============================================================ */
 const CATS = [
-  {k:/labubu/, t:2, l:[['elfie',"Labubu?? that was LAST year. the elves have moved on. keep up 💅"],['santa',"Santa still has 4,000 Labubus in the warehouse from last year. You want one? Take ten. Please."],['rudolph',"the Labubu era is over. let it rest in peace 🪦"]]},
+  {k:/labubu/, t:2, l:[['elfie',"labubu?? that was LAST year. the elves already moved on"],['santa',"Santa still has 4,000 Labubus in the warehouse from last year. Want one? Take ten. Please."],['rudolph',"the labubu thing is over. let it go 🪦"]]},
   {k:/squish|nee ?doh|mochi|stress ball|smiski|sonny angel|jellycat|crumbl|\btrend|tiktok made me/, t:2, l:[
-    ['elfie',"squishies. last year it was Labubu. next year it'll be something we can't even imagine yet. the cycle continues 🔁"],
+    ['elfie',"last year labubu, this year squishies. can't wait to find out what it is next year"],
     ['santa',"Santa will approve ONE squishy. Not thirty. Santa remembers the Labubu situation."],
     ['rudolph',"where will it even go. the bedroom floor is already 80% clothes"],
-    ['elfie',"by February this joins the trend graveyard next to the Labubus 🪦"],
+    ['elfie',"by february it's gonna be in a drawer next to the labubus"],
     ['wallet',"the squishy budget has its own spreadsheet now 🥲"]]},
-  {k:/\bcoal\b/, t:1, l:[['santa',"You... asked for coal. Saving Santa the paperwork. Efficient. Respect."],['rudolph',"reverse psychology. we see you, {n}."]]},
-  {k:/world peace|\bhappiness\b|\bhealth\b|\bfamily\b|\blove\b/, t:1, l:[['santa',"Aww. That's lovely, {n}. Santa will try. Now what do you ACTUALLY want"],['elfie',"pageant answer detected 🏆 now tell us the real wish"]]},
-  {k:/^(nothing|idk|i don'?t know|dunno|anything|whatever)\b/, t:1, l:[['elfie',"'{i}'. ok. so when you get nothing on Dec 25 you'll be totally fine with it? 🙂 thought so"],['santa',"'{i}' is not a gift, {n}. Santa needs SPECIFICS."]]},
-  {k:/stanley cup|maple leafs|\bleafs\b|raptors|blue jays|\bjays\b|\bjersey\b|hockey|\bskates?\b|\bnhl\b/, t:2, l:[['santa',"A Leafs thing? Santa can deliver merch. A Leafs Stanley Cup is outside Santa's powers. Santa is magic, not a miracle worker. 🍁"],['rudolph',"go leafs go 🍁 (see you in disappointment in april)"]]},
+  {k:/\bcoal\b/, t:1, l:[['santa',"You asked for coal?? Okay. That saves Santa a lot of paperwork."],['rudolph',"nice try with the reverse psychology, {n}"]]},
+  {k:/world peace|\bhappiness\b|\bhealth\b|\bfamily\b|\blove\b/, t:1, l:[['santa',"Aww, that's sweet, {n}. Santa will work on it. Now what do you ACTUALLY want?"],['elfie',"very nice answer. now tell us the real one 😂"]]},
+  {k:/^(nothing|idk|i don'?t know|dunno|anything|whatever)\b/, t:1, l:[['elfie',"'{i}' huh. so if you get nothing on the 25th you're totally fine with that? didn't think so"],['santa',"'{i}' is not a gift, {n}. Santa needs SPECIFICS."]]},
+  {k:/stanley cup|maple leafs|\bleafs\b|raptors|blue jays|\bjays\b|\bjersey\b|hockey|\bskates?\b|\bnhl\b/, t:2, l:[['santa',"A Leafs thing? Santa can deliver merch. A Leafs Stanley Cup is outside Santa's powers. Santa is magic, not a miracle worker. 🍁"],['rudolph',"go leafs go 🍁 see you in april for the usual heartbreak"]]},
   {k:/basketball|\bnba\b|lebron|\bsteph\b|curry|kobe|wemby|giannis|\bhoops?\b|\bdunk|spalding|\bwilson\b|raptors/, t:2, l:[
     ['santa',"Basketball! Santa played in college. Santa was the ball. 🏀"],
     ['rudolph',"I can't dunk but I can fly. who's the real athlete here 🦌"],
     ['elfie',"{n} is gonna practise in the driveway at 9pm in December. the neighbours are THRILLED"],
     ['santa',"Approved-ish. But {n} has to pass the ball to {o} at least once. That's the deal. 🤝"]]},
-  {k:/iphone|i phone|pixel \d|galaxy s\d|samsung (phone|galaxy)|new phone/, t:4, l:[['elfie',"a new phone. groundbreaking. never been done. truly the most original wish ever written 🙄"],['santa',"Which one, {n}? There are like 40 of them now. Santa still uses a flip phone."],['rudolph',"you literally have a phone in your hand in every photo ever taken of you"]]},
+  {k:/iphone|i phone|pixel \d|galaxy s\d|samsung (phone|galaxy)|new phone/, t:4, l:[['elfie',"a new phone. wow. nobody has ever asked for that before 🙄"],['santa',"Which one, {n}? There are like 40 of them now. Santa still uses a flip phone."],['rudolph',"you literally have a phone in your hand in every photo ever taken of you"]]},
   {k:/apple ?watch|smart ?watch|\bwatch\b/, t:3, l:[['elfie',"so you can check the time... which is on your phone... which you hold 24/7"]]},
-  {k:/airpods|headphones|earbuds|\bbeats\b|bose|sony wh|\bjbl\b|speaker/, t:3, l:[['elfie',"noise cancelling so you can ignore {o} in high definition. smart."],['santa',"Santa approves. Santa also knows Santa will now be ignored in high definition. Classic."]]},
-  {k:/macbook|laptop|\bipad\b|tablet|chromebook/, t:4, l:[['santa',"'It's for school.' Sure, {n}. Santa has heard 'for school' 3 million times. It's always for YouTube."],['elfie',"for 'homework' 👀 (homework = minecraft at 1am)"]]},
-  {k:/\bps5\b|\bps4\b|playstation|xbox|nintendo|\bswitch( 2)?\b|steam deck|gaming pc|\brtx\b|\bgpu\b|\bvr\b|quest 3|meta quest/, t:4, l:[['rudolph',"the elves can't build consoles. we tried in 2020. we made a toaster that runs fortnite. it was bad."],['santa',"Santa will need to see your screen-time report first, {n}. 📊"],['elfie',"goodbye sunlight. it was nice knowing you {n} ☀️👋"]]},
-  {k:/controller|gaming chair|gaming headset|keyboard|mouse/, t:2, l:[['elfie',"RGB on everything so you can lose with *lighting*"],['rudolph',"respectfully, the controller isn't why you're losing"]]},
-  {k:/robux|v-?bucks|fortnite|roblox|minecraft|valorant|riot points|cod points|skins?\b/, t:2, l:[['elfie',"asking Santa for fake money to buy fake clothes for a fake character. capitalism has reached the north pole"],['rudolph',"the elves have just been informed robux aren't real. they are devastated."]]},
+  {k:/airpods|headphones|earbuds|\bbeats\b|bose|sony wh|\bjbl\b|speaker/, t:3, l:[['elfie',"noise cancelling so you can ignore {o} better. smart"],['santa',"Approved. Santa also knows nobody will hear Santa calling them for dinner now."]]},
+  {k:/macbook|laptop|\bipad\b|tablet|chromebook/, t:4, l:[['santa',"'It's for school.' Sure, {n}. Santa has heard 'for school' 3 million times. It's always for YouTube."],['elfie',"for 'homework' 👀 aka minecraft at 1am"]]},
+  {k:/\bps5\b|\bps4\b|playstation|xbox|nintendo|\bswitch( 2)?\b|steam deck|gaming pc|\brtx\b|\bgpu\b|\bvr\b|quest 3|meta quest/, t:4, l:[['rudolph',"the elves can't build consoles. we tried in 2020. we made a toaster that runs fortnite. it was bad."],['santa',"Santa will need to see your screen-time report first, {n}. 📊"],['elfie',"say goodbye to sunlight {n} ☀️"]]},
+  {k:/controller|gaming chair|gaming headset|keyboard|mouse/, t:2, l:[['elfie',"rgb lights so you can lose but in color"],['rudolph',"respectfully, the controller isn't why you're losing"]]},
+  {k:/robux|v-?bucks|fortnite|roblox|minecraft|valorant|riot points|cod points|skins?\b/, t:2, l:[['elfie',"asking santa for fake money to buy fake clothes for your guy in a game. ok"],['rudolph',"the elves have just been informed robux aren't real. they are devastated."]]},
   {k:/gift ?card/, t:2, l:[['elfie',"a gift card is just money wearing a costume. I see you {n}. 🕵️"]]},
   {k:/\bmoney\b|\bcash\b|\$\$|bitcoin|crypto|\bstocks?\b|e-?transfer|interac|\bbucks\b/, t:3, l:[['santa',"Cash?? Santa's gift-wrapping department is personally offended."],['elfie',"money isn't a wish, {n}, that's an invoice 💀"],['rudolph',"bold of you to assume Santa has money. he pays the elves in cookies."]]},
   {k:/\bcar\b|tesla|lambo|lamborghini|ferrari|porsche|mercedes|\bbmw\b|maserati|\bjeep\b/, t:4, l:[['santa',"{n}. You can't drive. Santa checked."],['rudolph',"I am the car. I am literally the car. 🦌"]]},
   {k:/\bdog\b|puppy|\bcat\b|kitten|bunny|hamster|\bpet\b|\bfish\b|parrot|\bhorse\b|\bpony\b|guinea pig|turtle|lizard|snake/, t:3, l:[['santa',"A pet is a commitment, {n}. Who's walking it at 7am in January in Ontario? Be honest with Santa."],['elfie',"{o} is about to promise to 'help'. {o} will not help."],['rudolph',"as an animal I fully support more animals in the house 🦌❤️"]]},
-  {k:/jordan|\bnike\b|dunks?\b|adidas|yeezy|new balance|asics|sneaker|\bshoes\b|\bcrocs\b|\bvans\b|converse|on cloud|hoka/, t:3, l:[['elfie',"you have two feet. TWO. how many shoes does one person need 😭"],['rudolph',"hooves don't need sneakers and honestly we're thriving"],['elfie',"your current shoes saw this message. they're hurt."]]},
+  {k:/jordan|\bnike\b|dunks?\b|adidas|yeezy|new balance|asics|sneaker|\bshoes\b|\bcrocs\b|\bvans\b|converse|on cloud|hoka/, t:3, l:[['elfie',"you have two feet. TWO. how many shoes does one person need 😭"],['rudolph',"hooves don't need sneakers. just saying"],['elfie',"your current shoes saw this message. they're hurt."]]},
   {k:/\buggs?\b|\bboots?\b/, t:2, l:[['santa',"Boots. Practical. It's -20 in January. Santa approves. Finally a sane wish."],['elfie',"more boots?? the pink ones are crying in the closet rn"]]},
-  {k:/lululemon|aritzia|belt bag|align|wunder|scuba|super puff/, t:3, l:[['elfie',"the uniform. understood. 🫡"],['rudolph',"lululemon. so you can do yoga. (you will not do yoga.)"],['santa',"Santa looked at the price tag and had to sit down. Santa is fine. Santa is FINE."]]},
-  {k:/sephora|skincare|skin care|drunk elephant|\brhode\b|glossier|makeup|lip ?(gloss|oil|balm)|sol de janeiro|summer fridays|laneige|charlotte tilbury|bubble|serum|moisturi[sz]er|mascara|nail/, t:3, l:[['elfie',"a 12-step skincare routine?? bestie your skin barrier is literally perfect"],['santa',"Santa doesn't know what a 'lip oil' is but Santa respects it."],['rudolph',"my nose glows naturally. no products. just vibes. ✨🔴"]]},
-  {k:/stanley|owala|hydro ?flask|\byeti\b|water bottle|tumbler/, t:2, l:[['elfie',"a $60 water bottle so you can drink... the same water. I checked. it's the same water."],['santa',"Santa approves of hydration. Santa does not approve of the price of hydration."]]},
-  {k:/\blego\b/, t:2, l:[['santa',"LEGO! A classic! The elves are cheering. Santa will NOT be stepping on it barefoot though."],['elfie',"ngl the elves are elite at lego. this is our moment 💪"]]},
-  {k:/\bbooks?\b|kindle|novel|manga|comic/, t:1, nice:5, l:[['santa',"A BOOK?! {n}, Santa is emotional. +5 nice points 📚🥹"],['elfie',"reading?? in this economy??"]]},
+  {k:/lululemon|aritzia|belt bag|align|wunder|scuba|super puff/, t:3, l:[['elfie',"the uniform. got it"],['rudolph',"lululemon. for all that yoga you're definitely gonna do"],['santa',"Santa looked at the price and had to sit down for a minute."]]},
+  {k:/sephora|skincare|skin care|drunk elephant|\brhode\b|glossier|makeup|lip ?(gloss|oil|balm)|sol de janeiro|summer fridays|laneige|charlotte tilbury|bubble|serum|moisturi[sz]er|mascara|nail/, t:3, l:[['elfie',"a 12-step skincare routine?? your skin is literally fine"],['santa',"Santa doesn't know what a lip oil is. Santa is going to google it."],['rudolph',"my nose glows with zero products. just saying 🔴"]]},
+  {k:/stanley|owala|hydro ?flask|\byeti\b|water bottle|tumbler/, t:2, l:[['elfie',"a $60 water bottle so you can drink... the same water. I checked. it's the same water."],['santa',"Santa is pro water. Santa is not pro sixty-dollar water bottle."]]},
+  {k:/\blego\b/, t:2, l:[['santa',"LEGO! A classic! The elves are cheering. Santa will NOT be stepping on it barefoot though."],['elfie',"ok the elves are actually really good at lego. finally something we can make"]]},
+  {k:/\bbooks?\b|kindle|novel|manga|comic/, t:1, nice:5, l:[['santa',"A BOOK?! {n}, Santa is emotional. +5 nice points 📚🥹"],['elfie',"a book?? who are you and what did you do with {n}"]]},
   {k:/\bsocks?\b|pajamas|pyjamas|\bpjs\b|slippers|blanket|heated/, t:1, l:[['santa',"Cozy stuff, voluntarily?? Who raised you? (great job, parents)"],['elfie',"this is the most dad wish i've ever seen and I love it"]]},
   {k:/gucci|louis vuitton|\blv\b|prada|balenciaga|chanel|\bdior\b|versace|designer|rolex|cartier|goyard|moncler|canada goose|\bysl\b|off-?white/, t:4, l:[['elfie',"designer?? who are you trying to impress, the school bus driver? 💀"],['santa',"The workshop doesn't have a luxury department. We have a 'nice socks' department."]]},
-  {k:/drone|camera|gopro|polaroid|instax|ring light|tripod|microphone|\bmic\b/, t:3, l:[['santa',"Content creator era loading... Santa demands to be in the first video."],['elfie',"can't wait for the 'day in my life' vlog: woke up. ate cereal. complained about {o}. the end."]]},
+  {k:/drone|camera|gopro|polaroid|instax|ring light|tripod|microphone|\bmic\b/, t:3, l:[['santa',"So you're a YouTuber now? Santa wants to be in the first video."],['elfie',"can't wait for the 'day in my life' vlog: woke up. ate cereal. complained about {o}. the end."]]},
   {k:/perfume|cologne|fragrance|body spray|\baxe\b/, t:3, l:[['elfie',"please be the good kind and not the kind you can smell from the next hallway 😷"],['rudolph',"I can smell it from the north pole already"]]},
-  {k:/\bbike\b|e-?bike|scooter|skateboard|hoverboard|rollerblades?/, t:3, l:[['santa',"Outdoor activity! Santa approves. Helmet included. Non-negotiable. ⛑️"]]},
+  {k:/\bbike\b|e-?bike|scooter|skateboard|hoverboard|rollerblades?/, t:3, l:[['santa',"Getting outside! Santa likes it. The helmet comes with it, no arguing. ⛑️"]]},
   {k:/\bski(s|ing)?\b|snowboard|sled|toboggan/, t:3, l:[['rudolph',"snow sports! finally someone in this family who gets me ❄️🦌"]]},
   {k:/\btrip\b|travel|disney|vacation|japan|paris|\btickets?\b|concert|taylor swift|\beras\b|cruise|hawaii|cancun/, t:4, l:[['santa',"The sleigh is for presents, {n}. It is NOT an Uber."],['rudolph',"I am not flying you anywhere. my back."]]},
-  {k:/\bled\b|lights|\bbed\b|\bdesk\b|beanbag|room decor|mini ?fridge|lava lamp/, t:2, l:[['elfie',"so the room can be purple at 3am. iconic. respect."]]},
-  {k:/chocolate|candy|snacks?|cookies?|nutella|ferrero|kinder|chips|gummies|sour patch/, t:1, l:[['santa',"Snacks. Simple. Honest. Santa relates on a spiritual level. 🍪"]]},
+  {k:/\bled\b|lights|\bbed\b|\bdesk\b|beanbag|room decor|mini ?fridge|lava lamp/, t:2, l:[['elfie',"so the room can be purple at 3am. cool cool"]]},
+  {k:/chocolate|candy|snacks?|cookies?|nutella|ferrero|kinder|chips|gummies|sour patch/, t:1, l:[['santa',"Snacks! Finally a wish Santa understands. 🍪"]]},
   {k:/phone case|charger|cable|power ?bank|adapter/, t:1, l:[['rudolph',"a charger. so practical. are you secretly 45 years old"]]},
   {k:/hoodie|sweater|sweatshirt|university|\buoft\b|clothes|shirt|jacket|pants|\bdress\b|\bjeans\b|sweatpants|leggings/, t:2, l:[['elfie',"more hoodies? you two already showed up to the family photo in matching University of Toronto merch like you got early admission 🎓"],['santa',"Clothes! The one gift that gets an 'oh... thanks' face. Santa is ready for it."]]},
   {k:/guitar|piano|drums?\b|ukulele|violin|\bbass\b|karaoke/, t:3, l:[['santa',"An instrument! The neighbours have been notified. They are not happy. 🎸"],['elfie',"{o} is gonna need noise-cancelling headphones for this one"]]},
@@ -505,16 +505,16 @@ const DOMAINS = [
   {d:/amazon\./, l:[['elfie',"an amazon link. so the elves are just Jeff Bezos now. cool cool cool 📦"]]},
   {d:/apple\.com/, l:[['wallet',"apple.com 😰"]]},
   {d:/sephora\./, l:[['elfie',"a sephora link. I can smell the 20 free samples from here"]]},
-  {d:/lululemon\./, l:[['elfie',"lululemon. the uniform. understood."]]},
+  {d:/lululemon\./, l:[['elfie',"lululemon again. ok"]]},
   {d:/aritzia\./, l:[['elfie',"aritzia. the OTHER uniform."]]},
   {d:/nike\.com/, l:[['rudolph',"just do it? more like just pay for it"]]},
   {d:/stockx\.|goat\.com/, l:[['wallet',"resale prices?? *Parents' Wallet has left the chat* ...jk I can't leave, I'm a wallet"]]},
-  {d:/temu\.|shein\.|aliexpress\./, l:[['santa',"Arrives in 3 to 6 business MONTHS. Santa respects the budget though."]]},
+  {d:/temu\.|shein\.|aliexpress\./, l:[['santa',"That'll show up in like 3 to 6 MONTHS. Santa likes the price though."]]},
   {d:/costco\./, l:[['elfie',"a costco link?? are we getting 48 rolls of toilet paper for christmas"]]},
   {d:/bestbuy\./, l:[['rudolph',"best buy. the elves call it 'worst wallet'"]]},
   {d:/walmart\./, l:[['santa',"Walmart. Practical. Santa likes practical."]]},
   {d:/canadiantire\./, l:[['santa',"Canadian Tire money accepted at the North Pole 🇨🇦"]]},
-  {d:/etsy\./, l:[['elfie',"etsy! handmade! the elves feel SEEN 🥹"]]},
+  {d:/etsy\./, l:[['elfie',"etsy! handmade! the elves are honored 🥹"]]},
   {d:/tiktok\./, l:[['elfie',"a TikTok link. so the algorithm told you to want this. got it."]]},
   {d:/youtube\.|youtu\.be/, l:[['santa',"Santa is NOT watching an 18 minute video to figure out what you want."]]},
   {d:/steampowered\.|steamcommunity/, l:[['rudolph',"steam. like the steam coming out of the wallet's ears"]]},
@@ -524,12 +524,12 @@ const DOMAINS = [
 ];
 const GENERIC = [
   ['santa',"Noted, {n}. '{i}' is on the list. The elves are already sighing."],
-  ['elfie',"'{i}'? bold. interesting. not what I would've picked but ok bestie"],
+  ['elfie',"'{i}'? interesting choice. not what I'd pick but ok"],
   ['rudolph',"I've pulled a sleigh through a blizzard. I can handle '{i}'. probably."],
   ['elfie',"{o} is gonna be so jealous of this one. or confused. one of those."],
   ['santa',"Added. Santa's legal team will review."],
   ['elfie',"I googled it. I still don't know what it is. approved I guess??"],
-  ['rudolph',"this is giving 'I opened TikTok Shop at 2am' energy"],
+  ['rudolph',"this sounds like something you found on tiktok shop at 2am"],
   ['santa',"HO HO hmm. Okay. Fine."],
   ['elfie',"writing it down in glitter pen ✍️✨"],
   ['rudolph',"the reindeer union has been notified"],
@@ -541,9 +541,9 @@ const GENERIC_LINK = [
   ['santa',"A link! Finally someone who understands logistics."],
   ['rudolph',"thank you for the link. last year someone just wrote 'the blue thing'"],
 ];
-const WALLET = {3:["🥲","who told you about that","I'm a wallet, not a miracle","*sweats in leather*"], 4:["I'm going to go lie down","🫠🫠🫠","I'm literally made of receipts at this point","*Parents' Wallet has left the chat* ...jk I can't leave, I'm a wallet"]};
+const WALLET = {3:["🥲","who told you about that","I'm a wallet, not a miracle","*sweats in leather*"], 4:["I'm going to go lie down","🫠🫠🫠","I'm basically just receipts at this point","*Parents' Wallet has left the chat* ...jk I can't leave, I'm a wallet"]};
 const IDEAS_KID = {
-  artin:["a mini hoop for your bedroom door. {o} will love it (she will not)","a basketball signed by Santa (not worth any money, so you can't complain about the price)","a 'DO NOT DISTURB — GAME ON' sign","new basketball socks. cheap. approved. nobody can say 'why did u spend so much'"],
+  artin:["a mini hoop for your bedroom door. {o} will love it (she will not)","a basketball signed by Santa (not worth any money, so you can't complain about the price)","a 'DO NOT DISTURB, GAME ON' sign","new basketball socks. cheap. approved. nobody can say 'why did u spend so much'"],
   elsa:["an alarm clock on wheels that RUNS AWAY so you have to get up (real thing!)","a giant bin for the floor clothes. the floor would like to be seen again","a sunrise lamp so school mornings feel less like a punishment","ONE squishy. one. Santa is watching."],
 };
 const IDEAS = [
@@ -553,7 +553,7 @@ const IDEAS = [
   "a hoodie so big it's basically a blanket with sleeves",
   "a mini fridge for your room. snacks without leaving. peak living.",
   "a heated blanket. it's Canada. be serious.",
-  "a lava lamp. vintage. iconic. very main character.",
+  "a lava lamp. old school but kinda cool",
   "one (1) day where {o} has to do your chores. priceless.",
   "a karaoke mic so you can destroy everyone's ears on boxing day",
   "fuzzy socks. cheap = instant approval. it's called strategy.",
@@ -833,7 +833,7 @@ function explainVerdict(it){
   const t = it.tier, v = it.verdict;
   if (v === 'yes') return fresh1(["It's approved, {n}! Why are you asking why?? Take the W 🏆", "It's APPROVED. Don't make Santa change his mind. 🙂", "Approved because it's reasonable. Santa likes reasonable. Santa does not get much reasonable."]);
   if (t >= 4) return fresh1(["Because '{i}' costs more than the sleigh, {n}. The sleigh is vintage. 🛷", "Have you SEEN the price of '{i}'? Santa saw it and had to lie down.", "Because the Parents' Wallet fainted when it saw '{i}'. We're still waking it up."]);
-  if (v === 'no') return fresh1(["Santa consulted your dad. Your dad said 'na na na nemikhad'. Santa respects the chain of command.", "Because '{i}' is a want, not a need, {n}. Santa learned that from your parents.", "Santa had a feeling. Santa trusts the feeling. Beg better 😌"]);
+  if (v === 'no') return fresh1(["Santa consulted your dad. Your dad said 'na na na nemikhad'. Santa isn't going to argue with your dad.", "Because '{i}' is a want, not a need, {n}. Santa learned that from your parents.", "Santa just had a feeling about it. You can try begging 😌"]);
   return fresh1(["It's PENDING, {n}. Santa is thinking. Santa thinks slowly. Santa is 1,700 years old.", "Pending means maybe. Maybe means behave. 👀", "The elves are still voting on '{i}'. Elfie is the swing vote. good luck."]);
 }
 
@@ -841,7 +841,7 @@ function explainVerdict(it){
    Brain: little conversations
    ------------------------------------------------------------ */
 const QA = [
-  {k:/how (are|r) (you|u)|how'?s it going|how you doing|how'?s (santa|your day)|what'?s up santa/i, a:[['santa',"Santa is great, thanks for asking! Busy. Very busy. The elves are on their third coffee. How are YOU, {n}?"],['santa',"Santa is good! Santa just finished reading your sibling's list. Santa needs a nap. 😮‍💨"],['elfie',"we're thriving. Santa ate 40 cookies before noon. normal tuesday"]]},
+  {k:/how (are|r) (you|u)|how'?s it going|how you doing|how'?s (santa|your day)|what'?s up santa/i, a:[['santa',"Santa is great, thanks for asking! Busy. Very busy. The elves are on their third coffee. How are YOU, {n}?"],['santa',"Santa is good! Santa just finished reading your sibling's list. Santa needs a nap. 😮‍💨"],['elfie',"we're good. Santa ate 40 cookies before noon tho"]]},
   {k:/(what'?s|whats) (your|santa'?s) (name|real name)/i, a:[['santa',"Santa. S-A-N-T-A. Some call him Kris Kringle. Your dad calls him 'the guy who says nemikhad now'."]]},
   {k:/where (do|does) (you|santa) live|north pole/i, a:[['santa',"The North Pole! It's like Toronto in January, but somehow worse. ❄️"],['rudolph',"north pole. no wifi. no uber eats. send help"]]},
   {k:/(are|r) (you|u) real|is santa real/i, a:[['santa',"Santa is typing in your group chat right now. Make of that what you will. 🤔"]]},
@@ -851,30 +851,31 @@ const QA = [
   {k:/favou?rite (reindeer|elf)/i, a:[['rudolph',"me. obviously. next question"],['elfie',"Santa's favourite elf is me. it's not a competition. (I won)"]]},
   {k:/favou?rite (cookie|food|snack)/i, a:[['santa',"Chocolate chip. Warm. Santa is not picky but Santa IS particular."]]},
   {k:/favou?rite (colou?r)/i, a:[['santa',"Red. Shocking, Santa knows."]]},
-  {k:/(what about|for|get) (my )?(mom|dad|parents)/i, a:[['santa',"Ooh, a gift for your parents? Santa is emotional. Something homemade + one day of NO fighting with your sibling = elite gift. 🥹"]]},
+  {k:/(what about|for|get) (my )?(mom|dad|parents)/i, a:[['santa',"A gift for your parents? Aww. Make them something, and maybe go one whole day without fighting with your sibling. They'd love that. 🥹"]]},
   {k:/(know|met) (my )?(dad|father|baba)/i, a:[['santa',"Of course. Santa borrowed his catchphrase. 'na na na nemikhad' — the man's a legend."]]},
-  {k:/(know|met) (my )?(mom|mother|maman)/i, a:[['santa',"Santa knows your mom. Santa is a little scared of your mom. Respect. 🫡"]]},
+  {k:/(know|met) (my )?(mom|mother|maman)/i, a:[['santa',"Santa knows your mom. Santa is a little scared of your mom, honestly."]]},
   {k:/(how many|how long).{0,20}(christmas|xmas|days)|when is christmas/i, a:[['santa',"{countdown} 🎄 Plenty of time to behave."]]},
   {k:/what('?s| is) (rudolph|the reindeer) doing|where'?s rudolph/i, a:[['rudolph',"lying down. it's my off season. don't @ me"]]},
-  {k:/what('?s| is) elfie doing|what do elves do/i, a:[['elfie',"judging your lists and making squishies. mostly judging tho 💅"]]},
+  {k:/what('?s| is) elfie doing|what do elves do/i, a:[['elfie',"judging your lists and making squishies. mostly judging tho"]]},
   {k:/what can you do|how does this work|^help$|what do i do/i, a:[['santa',"Type a wish (or paste a link) and Santa adds it to your list. You can say things like 'remove the hoodie', 'what's on my list', 'the ps5 is my #1', or ask Santa for a pic 📸"]]},
-  {k:/(who are you|what are you)/i, a:[['santa',"Santa. The big guy. Head of Gift Approvals. 🎅"],['elfie',"I'm Elfie. I judge. that's the job 💅"]]},
+  {k:/(who are you|what are you)/i, a:[['santa',"Santa. The big guy. Head of Gift Approvals. 🎅"],['elfie',"I'm Elfie. I judge your lists. that's the whole job"]]},
   {k:/weather|cold|snow/i, a:[['rudolph',"-34 here. I can't feel my antlers"],['santa',"Snowing at the North Pole. Snowing in Ontario soon. Get boots. (Boots are approved.)"]]},
 ];
 const MOOD = [
-  {k:/\b(i'?m|im|i am) (so )?bored|\bbored\b/i, a:[['elfie',"bored?? clean your room. instant entertainment. (jk) (unless?)"],['santa',"Bored? Write Santa a list of 3 nice things you did today. Santa will wait."]]},
+  {k:/\b(i'?m|im|i am) (so )?bored|\bbored\b/i, a:[['elfie',"bored?? you could clean your room. just an idea 👀"],['santa',"Bored? Write Santa a list of 3 nice things you did today. Santa will wait."]]},
   {k:/\b(i'?m|im|i am) (so )?(sad|upset)|\bsad\b/i, a:[['santa',"Aw, {n}. Santa's sending a big virtual hug 🤗 Want to tell Santa what happened?"]]},
   {k:/\b(i'?m|im|i am) (so )?(tired|sleepy)/i, a:[['santa',"Then go to bed, {n}! Santa is begging. Sleep is approved. ✅"]]},
   {k:/\b(i'?m|im|i am) (so )?hungry|\bhungry\b/i, a:[['santa',"Santa is also always hungry. Go eat something. Not the cookies. Those are Santa's. 🍪"]]},
-  {k:/\b(i'?m|im|i am) (so )?(excited|happy|hyped)/i, a:[['elfie',"the energy!! we love to see it ✨"]]},
-  {k:/homework|\btest\b|exam|quiz|project due/i, a:[['santa',"Homework: Santa's least favourite word. Do it before basketball/squishies and Santa will notice. 📚"],['elfie',"homework is just the elves of school. nobody likes it but it gets done 😩"]]},
+  {k:/\b(i'?m|im|i am) (so )?(excited|happy|hyped)/i, a:[['elfie',"yesss love this"]]},
+  {k:/\b(got|scored|get) (a |an )?(9\d|100|8\d|a\+?)\b|\baced\b|\bhonou?r roll\b|perfect score/i, a:[['santa',"Look at you! Santa is putting that on the North Pole fridge. +2 nice points 📚"],['elfie',"ok nerd. proud of u tho"],['rudolph',"smart. respect."]], nice:2},
+  {k:/homework|\btest\b|exam|quiz|project due/i, a:[['santa',"Good luck, {n}! Study a bit, then actually sleep. Santa believes in you 📚"],['elfie',"ugh. do it fast and get it over with 😩"]]},
   {k:/\b(i|we) (just |finally )?(won|scored|beat)|made a (basket|shot|3)|got a 3|hit a (3|three)/i, a:[['santa',"LET'S GOOO {n} 🏀🔥 Santa is proud. Santa is ALSO noting this."]]},
 ];
 const GREET = [
-  {k:/^(hi|hey|hello|yo|sup|hii+|heyy+|wassup|what'?s up|good morning|morning|hola|salam|salaam)\b/i, a:[['santa',"Hi {n}! 🎅 Got a wish for Santa?"],['elfie',"heyyy {n} 💅 what are we wishing for today"],['santa',"{n}! Santa was just thinking about you. (Santa was checking your list.)"]]},
+  {k:/^(hi|hey|hello|yo|sup|hii+|heyy+|wassup|what'?s up|good morning|morning|hola|salam|salaam)\b/i, a:[['santa',"Hi {n}! 🎅 Got a wish for Santa?"],['elfie',"heyyy {n} what are we wishing for today"],['santa',"{n}! Santa was just thinking about you. (Santa was checking your list.)"]]},
   {k:/^(thanks|thank you|ty|thx|merci|mersi)\b/i, a:[['santa',"You're welcome, {n}. Now behave. 👀"],['santa',"Anything for you, {n}. Within budget."]]},
-  {k:/^(lol|lmao|lmfao|haha+|hehe+|💀|😂|🤣|rofl|dead)\b/i, a:[['elfie',"glad we're having fun. Santa is not laughing. Santa is CALCULATING. 🧮"],['rudolph',"I'm hilarious, I know"],['santa',"Santa is funny. Santa has been told."]]},
-  {k:/^(ok|okay|k|kk|fine|bet|cool|alright|aight|sure)\b/i, a:[['rudolph',"ok."],['santa',"Okay! 👍"],['elfie',"k 💅"]]},
+  {k:/^(lol|lmao|lmfao|haha+|hehe+|💀|😂|🤣|rofl|dead)\b/i, a:[['elfie',"glad you're having fun. Santa is not laughing. Santa is doing math. 🧮"],['rudolph',"I'm hilarious, I know"],['santa',"Santa is funny. Santa has been told."]]},
+  {k:/^(ok|okay|k|kk|fine|bet|cool|alright|aight|sure)\b/i, a:[['rudolph',"ok."],['santa',"Okay! 👍"],['elfie',"k"]]},
   {k:/^(bye|gtg|good ?night|gn|night|cya|see ya)\b/i, a:[['santa',"Goodnight, {n}! 🌙 Santa will be watching. In a nice way."],['elfie',"byeee 👋 don't forget your list is still under review"]]},
   {k:/(i love you|love u|ily|love you santa)/i, a:[['santa',"Santa loves you too, {n}. Santa is still judging the list though. ❤️"]]},
   {k:/(sorry|my bad|i apologi)/i, a:[['santa',"Apology accepted, {n}. +2 nice points. Growth! 🌱"]], nice:2},
@@ -931,7 +932,7 @@ function addWishes(who, lines, rawText){
     const l = fresh1([
       ['wallet',"watch. we buy it and {n} goes 'WHY DID YOU SPEND SO MUCH 😭'. every. single. year."],
       ['santa',"Okay {n}, but if Santa gets this, you are NOT allowed to say 'why did u spend so much' on Christmas morning. Deal? 🤝"],
-      ['elfie',"{n} wants the expensive stuff but gets mad when anyone actually spends money. make it make sense 😂"],
+      ['elfie',"{n} wants the expensive stuff but then gets mad when anyone spends money on it?? 😂"],
       ['rudolph',"prediction: {n} opens it, smiles for 2 seconds, then asks how much it cost 🧾"]]);
     say.push(l);
     if (/Deal\?/.test(l[1])) c.deal = {kind:'spend', item: worst.item.id, at: Date.now(), n: c.n};
@@ -980,7 +981,7 @@ function think(who, text){
   if (c.pending && c.pending.who === who){
     const pend = c.pending;
     if (/^(y|ye|yes|yep|yeah|ya|yup|sure|ok|okay|add it|it is|ya it is|yes it is|wish)\b/i.test(clean)){ c.pending = null; addWishes(who, [pend.text], pend.text); return; }
-    if (/^(n|no|nope|nah|naw|just chatting|not a wish)\b/i.test(clean)){ c.pending = null; talk([['elfie', fresh1(["got it, just vibing then 😌", "ok ok, chatting mode 💬", "noted. not a wish. Santa can relax."])]], who); return; }
+    if (/^(n|no|nope|nah|naw|just chatting|not a wish)\b/i.test(clean)){ c.pending = null; talk([['elfie', fresh1(["got it, just chatting then", "ok ok, chatting mode 💬", "noted. not a wish. Santa can relax."])]], who); return; }
     c.pending = null;
   }
 
@@ -990,7 +991,7 @@ function think(who, text){
     if (/^(deal|ok|okay|fine|yes|yeah|ya|sure|bet|promise|i promise|pinky promise|agreed|🤝)/i.test(clean) || clean === ''){
       c.deal = null; if (it && it.verdict !== 'yes'){ it.verdict = 'maybe'; }
       bump(who, 2);
-      talk([['santa', d.kind === 'spend' ? "🤝 DEAL. It's in writing now, {n}. One 'why did u spend so much' and Santa takes it back." : "🤝 Deal. Rudolph is the witness. Rudolph never sleeps. Rudolph will know. ⏰"], ['rudolph', "witnessed. 🦌📝"]], who);
+      talk([['santa', d.kind === 'spend' ? "🤝 DEAL. It's in writing now, {n}. One 'why did u spend so much' and Santa takes it back." : "🤝 Deal. Rudolph heard it. Rudolph doesn't forget. ⏰"], ['rudolph', "witnessed. 🦌📝"]], who);
       return;
     }
     if (/^(no|nope|nah|never|no deal)/i.test(clean)){
@@ -1003,7 +1004,7 @@ function think(who, text){
   // Santa pics
   if (/\b(pics?|photos?|pictures?|selfies?|wyd|what are you doing|what r u doing|proof|send (me )?a? ?(pic|photo))\b/i.test(lc) && !WISH_CUE.test(lc) && (words <= 5 || /send|santa|show|see/i.test(lc))){ santaPic(who); return; }
   // dad's catchphrase
-  if (/nemikhad|na na na/i.test(lc)){ talk([['santa', fresh1(["HEY. That's Santa's line. Your dad licensed it to Santa for the holidays. 😤", "Using Santa's line against Santa?? The audacity. -1 nice point. 😂"])]], who); return; }
+  if (/nemikhad|na na na/i.test(lc)){ talk([['santa', fresh1(["HEY. That's Santa's line. Your dad licensed it to Santa for the holidays. 😤", "Using Santa's own line on Santa?? -1 nice point 😂"])]], who); return; }
   // rudeness
   if (RUDE.test(lc)){ bump(who, -3); talk([['santa', fresh1(["Language, {n}. That's -3 nice points. Santa is always watching. 👁️", "Wow. -3 nice points. Santa will remember this in December. Oh wait. It IS December soon."])]], who); return; }
 
@@ -1014,7 +1015,7 @@ function think(who, text){
     return;
   }
   if (who === 'artin' && /elsa/i.test(lc) && /(annoying|didn'?t do|started|fault|stop|lying|snitch|not me|wasn'?t me|bother|took|messy|room)/i.test(lc)){
-    talk([['santa', fresh1(["Santa has heard both sides. Santa believes Elsa. Santa always believes Elsa. 🙂", "Santa's ruling: you're both getting socks. 🧦", "Artin. Santa watched the replay. 📹"])], ['elfie', fresh1(["it's giving 'I didn't do anything' energy 😂", "the jury (me) is not convinced"])]], who);
+    talk([['santa', fresh1(["Santa has heard both sides. Santa believes Elsa. Santa always believes Elsa. 🙂", "Santa's ruling: you're both getting socks. 🧦", "Artin. Santa watched the replay. 📹"])], ['elfie', fresh1(["sounds like an 'I didn't do anything' to me 😂", "the jury (me) is not convinced"])]], who);
     return;
   }
 
@@ -1026,7 +1027,7 @@ function think(who, text){
     S.items = S.items.filter(x => x !== it); bump(who, 3);
     if (c.lastItem === it.id) c.lastItem = null;
     addMsg({from:'sys', text:`🗑️ Removed '${it.title}' from ${NAME[who]}'s list`});
-    talk([[rnd(['santa','elfie']), fresh1(["{n} removed '{i}'. Selfless. Mature. +3 nice points. 🥹", "deleted '{i}'?? character development 👏 +3 nice points", "'{i}' has left the list. we hardly knew it."])]], who, shortTitle(it.title));
+    talk([[rnd(['santa','elfie']), fresh1(["{n} removed '{i}'. Selfless. Mature. +3 nice points. 🥹", "deleted '{i}'?? look at you growing up 👏 +3 nice points", "'{i}' has left the list. we hardly knew it."])]], who, shortTitle(it.title));
     return;
   }
 
@@ -1092,14 +1093,14 @@ function think(who, text){
         const v = V[it.verdict];
         addMsg({from:'sys', text:`🔁 '${it.title}' upgraded to ${v[0]} ${v[1]}`});
         if (promise === 'clean') { talk([['santa', "A CLEAN ROOM?? Santa accepts. Upgraded. But Elfie will be doing a room inspection. 🔦"], ['elfie', "I'm bringing a hazmat suit. just in case"]], who, shortTitle(it.title)); return; }
-        if (promise === 'wake') { talk([['santa', "Waking up early? On a SCHOOL day? Santa is shook. Upgraded. Rudolph is setting the alarm. ⏰"], ['rudolph', "I will be outside your window at 7am. ringing a bell."]], who, shortTitle(it.title)); return; }
+        if (promise === 'wake') { talk([['santa', "Waking up early? On a SCHOOL day? Santa is shocked. Upgraded. Rudolph is setting the alarm. ⏰"], ['rudolph', "I will be outside your window at 7am. ringing a bell."]], who, shortTitle(it.title)); return; }
         talk([['santa', fresh1(["...fine. Santa is weak. '{i}' upgraded. Don't tell your sibling. 🤫", "Okay okay. That was a good argument. Upgraded. 📈", "Santa's heart grew three sizes. '{i}' upgraded."])]], who, shortTitle(it.title));
       } else if (old === 'yes'){
         if (promise){ bump(who, 3); talk([['santa', promise === 'clean' ? "A clean room?! Santa is writing this down. +3 nice points. Elfie will inspect. 🔦" : promise === 'wake' ? "Waking up early?! +3 nice points. Rudolph will be checking at 7am sharp. ⏰" : "Sharing?! +3 nice points. Santa is proud. 🥹"]], who); }
-        else talk([['elfie', "bestie it's already APPROVED. stop while you're ahead 😂"]], who);
+        else talk([['elfie', "it's already APPROVED. stop while you're ahead 😂"]], who);
       } else {
         bump(who, -1);
-        talk([['santa', fresh1(["na na na nemikhad. 😌 Nice try though.", "Santa admires the effort. Santa's answer is still no. 🙂", "Begging detected. Santa is unmoved. (Santa is a little moved.) Still no."])], ...(who === 'elsa' && !promise ? [['elfie', "hint: promises about your room or waking up early hit different 👀"]] : who === 'artin' && !promise ? [['elfie', "hint: promise you won't say 'why did u spend so much' 👀"]] : [])], who, shortTitle(it.title));
+        talk([['santa', fresh1(["na na na nemikhad. 😌 Nice try though.", "Santa admires the effort. Santa's answer is still no. 🙂", "Santa sees the begging. Santa is not moved. Okay, a little. Still no."])], ...(who === 'elsa' && !promise ? [['elfie', "hint: promises about your room or waking up early work really well 👀"]] : who === 'artin' && !promise ? [['elfie', "hint: promise you won't say 'why did u spend so much' 👀"]] : [])], who, shortTitle(it.title));
       }
       return;
     }
@@ -1111,7 +1112,7 @@ function think(who, text){
 
   // Q&A, mood, greetings
   for (const g of [...QA, ...MOOD]){
-    if (g.k.test(lc)){ const l = fresh1(g.a); talk([[l[0], l[1].replace('{countdown}', daysLeft().replace(/^⏳ /,''))]], who); return; }
+    if (g.k.test(lc)){ if (g.nice) bump(who, g.nice); const l = fresh1(g.a); talk([[l[0], l[1].replace('{countdown}', daysLeft().replace(/^⏳ /,''))]], who); return; }
   }
   if (/^(good morning|morning|gm)\b/.test(clean)){ talk([['santa', who === 'elsa' && new Date().getHours() < 9 ? "Elsa?? Awake?? Before 9?? Santa needs to sit down. ☕" : "Good morning, {n}! ☕"]], who); bot('santa', PICS.find(p => p.id === 'tea').cap, {kind:'img', src:'santa/tea.jpg'}); return; }
   if (who === 'artin' && /\b(1v1|one on one|1 on 1|play me|ball is life|bet i can beat)\b/.test(clean)){ talk([['santa', "You want a 1v1 with Santa, {n}? Careful what you wish for."]], who); bot('santa', PICS.find(p => p.id === 'dribble').cap, {kind:'img', src:'santa/dribble.jpg'}); return; }
@@ -1129,9 +1130,9 @@ function think(who, text){
     talk([['elfie', who === 'elsa' ? fresh1(["the room. the legend. the mess. Santa sent an elf in last week. we haven't heard back 🫡", "clean room = +10 nice points. just putting that out there 👀"]) : "Artin's room: suspiciously ok. Santa is checking under the bed. 🔦"]], who);
     return;
   }
-  if (/^(nothing much|not much|just chilling|chilling|nm|nothing much just chilling|not much hbu|nm hbu|hbu|wbu)$/.test(clean)){ talk([fresh1([['santa', "Same. Santa is also chilling. (Santa is not chilling. Santa has 2 billion deliveries.) 🎅"], ['elfie', "chilling?? in THIS economy?? 😂"]])], who); return; }
+  if (/^(nothing much|not much|just chilling|chilling|nm|nothing much just chilling|not much hbu|nm hbu|hbu|wbu)$/.test(clean)){ talk([fresh1([['santa', "Santa wishes he was chilling. Santa has 2 billion deliveries to plan. 🎅"], ['elfie', "chilling?? must be nice 😂"]])], who); return; }
   if (/^(no|nah|nope|naw|yes|yeah|ya|yep|yup|idk|i dunno|maybe|hmm+|huh|what|wdym|deal|true|facts|same|wow|omg|bruh|bro|nothing|nothing much|nm|nvm|why|sure|k|kk|ok|okay)$/.test(clean)){
-    reply(who, text, [fresh1([['rudolph', "ok 🦌"], ['santa', "Santa is confused but Santa respects it. 🫡"], ['elfie', "...ok? 😂 got a wish for us or nah"], ['santa', "Noted. Santa has written down: '" + text.slice(0, 20) + "'. Very helpful. 📝"]])]);
+    reply(who, text, [fresh1([['rudolph', "ok 🦌"], ['santa', "Santa has no idea what that means but ok 🫡"], ['elfie', "...ok? 😂 got a wish for us or nah"], ['santa', "Noted. Santa has written down: '" + text.slice(0, 20) + "'. Very helpful. 📝"]])]);
     return;
   }
   if (isEmojiOnly(text)){ talk([['elfie', fresh1(["very descriptive. the elves will build... a '" + text + "'. sure.", "emojis are not a wish, {n}. use your words 😤", text + " right back at you"])]], who); return; }
@@ -1143,10 +1144,10 @@ function think(who, text){
   if (/\?\s*$/.test(text) || /^(what|why|how|when|where|who|is|are|do|does|can|could|will|would|should)\b/.test(clean)){
     if (/^(can|could) (i|we|you|santa) (get|have|bring|buy)/.test(clean)){ const body = clean.replace(/^(can|could) (i|we|you|santa) (get|have|bring|buy) (me |us )?/, ''); addWishes(who, splitWishes(body), text); return; }
     reply(who, text, [fresh1([
-      ['santa', "Great question, {n}. Santa will think about it. (Santa is not thinking about it.) Got any wishes though? 🎁"],
+      ['santa', "Good question, {n}. Santa will get back to you on that. Any wishes in the meantime? 🎁"],
       ['rudolph', "great question. no idea. I'm a deer. 🦌"],
       ['santa', "Santa's legal team advises Santa not to answer that. 😅"],
-      ['elfie', "idk bestie, I just work here 💅"]])]);
+      ['elfie', "idk, I just work here"]])]);
     return;
   }
   if (words <= 5 && !CHATTY.test(clean)){ addWishes(who, splitWishes(text), text); return; }
@@ -1158,15 +1159,15 @@ function think(who, text){
     const pos = /(love|best|fun|cool|amazing|awesome|great|cute|so good|yay|lets go|let'?s go)/.test(clean);
     reply(who, text, [fresh1(neg ? [
       ['santa', "Ugh, that sounds rough, {n}. 😩 Santa is on your side. Want a wish to cheer you up?"],
-      ['elfie', "noooo 😭 that's so not it. sending elf energy your way"],
+      ['elfie', "noooo 😭 that's not fair. sending you a hug from the north pole"],
       ['rudolph', "that's terrible. I'm sorry. here is a reindeer hug 🦌🤗"]] : pos ? [
-      ['elfie', "love that for you ✨"],
-      ['santa', "That's wonderful, {n}! Santa is smiling. Santa's beard is smiling. 😊"],
+      ['elfie', "ok that's actually awesome"],
+      ['santa', "That's great, {n}! Santa is smiling under all this beard. 😊"],
       ['rudolph', "nice. I'm happy for you. (deer face, can't show it)"]] : [
       ['santa', "Santa hears you, {n}. 🎅 Anything on the wishlist today?"],
-      ['elfie', "omg tell me more 👀 (also... any wishes?)"],
+      ['elfie', "omg tell me more 👀"],
       ['rudolph', "fascinating. I'm a deer, but fascinating."],
-      ['santa', "Interesting! Santa is taking notes. Santa takes notes on everything. 📝"],
+      ['santa', "Noted! Santa writes everything down. It's kind of a whole thing. 📝"],
       ['elfie', "relatable tbh"]])]);
     return;
   }
@@ -1199,7 +1200,7 @@ chat.addEventListener('click', e => {
   if (ch.act === 'brain'){ addMsg({from: S.sender, text: '🧠 yes, install it'}); startBrain(true); return; }
   if (ch.act === 'install'){ showInstall(); return; }
   if (ch.act === 'later'){ addMsg({from: S.sender, text: 'later'}); talk([['elfie', "ok! it's in the menu whenever (tap the group name up top)"]], S.sender); return; }
-  if (ch.act === 'chat'){ addMsg({from: ch.who, text: '💬 just chatting'}); talk([['elfie', fresh1(["got it, just vibing then 😌", "ok ok, chatting mode 💬"])]], ch.who); }
+  if (ch.act === 'chat'){ addMsg({from: ch.who, text: '💬 just chatting'}); talk([['elfie', fresh1(["got it, just chatting then", "ok ok, chatting mode 💬"])]], ch.who); }
 });
 
 /* ------------------------------------------------------------
@@ -1214,16 +1215,28 @@ let AI = null, aiOff = false;
   } catch(e){}
 })();
 
-const AI_RULES = `You write the replies in a funny iMessage-style group chat called "Wishlist HQ" where two kids, Artin and Elsa, tell Santa what they want for Christmas. You voice four characters (pick whoever fits; usually 1-3 short messages total):
-- santa: Santa. Warm, dramatic, judgy-but-loving; often calls himself "Santa" in third person. He borrowed the kids' dad's Farsi catchphrase "na na na nemikhad" (≈ "no no no, you don't need it") and uses it to turn down wishes.
-- elfie: Elfie the Elf. Sassy Gen-Z elf, mostly lowercase, roasts trends, 💅.
-- rudolph: Rudolph. Dry, deadpan reindeer. Very short sentences.
-- wallet: "Parents' Wallet". Terrified of expensive wishes. Very short and dramatic.
+const AI_RULES = `You write the replies in a funny iMessage-style group chat called "Wishlist HQ" where two kids, Artin and Elsa, tell Santa what they want for Christmas. You voice four characters. Usually one or two of them reply; never more than three.
+- santa: Santa. Warm, funny grandpa energy, a bit dramatic, sometimes calls himself "Santa". He borrowed the kids' dad's Farsi catchphrase "na na na nemikhad" (≈ "no no no, you don't need it"). He uses it ONLY when turning down a wish, not in every message.
+- elfie: Elfie the Elf. A sarcastic teenage elf. Types in lowercase, short, dry, teases about trends.
+- rudolph: Rudolph. Deadpan reindeer. One short sentence.
+- wallet: "Parents' Wallet". Only shows up for expensive wishes. A few words.
 About the kids (good kids, tease lovingly; never mean, never about looks, body or grades):
 - Artin: the older one (a boy, preteen/teen). Loves basketball, money and typical boy stuff. Wants expensive things, but when someone actually spends a lot on him he says "why did u spend so much 😂". Annoys his sister.
 - Elsa: the younger one (a girl). Gets obsessed with trends and overdoes it (Labubu last year, squishies this year). Her room is very messy. Can't wake up early for school. Complains Artin is annoying.
 They live near Toronto, Canada.
-Style: teen-appropriate and actually funny. Short texts (each under 200 characters). Emoji fine. RESPOND TO WHAT THE KID ACTUALLY SAID: answer questions, follow up on earlier messages in the transcript, keep running jokes going, and don't reuse lines already in the transcript.
+How to text: the kids are 10-13 and can smell a bot instantly, so write exactly like a real person texting in a family group chat.
+- Be actually funny: tease, exaggerate, and make callbacks to the kid's wishes and quirks (Artin's basketball and "why did u spend so much", Elsa's squishies, messy room and mornings). A flat answer like "ok" or "plants" is a fail: never reply with only one or two words.
+- Short: most texts are under 20 words, in plain everyday words.
+- Answer what the kid actually said, specifically, talking to THAT kid. Don't mix up whose wish is whose. Follow up on earlier messages and never repeat a line already in the chat.
+- At most one emoji per text, and many texts have none.
+- Never: "Ah,"/"Oh,"/"Well," openers, "Ho ho ho" (unless it's the first message in a while), em dashes, *actions in asterisks*, hashtags, quotation-mark titles, "!!" chains, explaining the joke, or ending with a question every time.
+- No try-hard slang: never "bestie", "slay", "it's giving", "in this economy", "vibes", "iconic", "main character", "make it make sense", "no cap", "fr fr".
+- Never say or hint that you are an AI, a bot or a program. You are Santa, Elfie, Rudolph or the wallet.
+Examples of the style (never reuse these lines):
+Artin: can i get a hoverboard → {"from":"santa","text":"A hoverboard? Santa has seen you on a scooter. Santa is thinking about it."} {"from":"wallet","text":"please. I have a family."}
+Elsa: i lost my airpods again → {"from":"elfie","text":"check under the clothes pile. no the other clothes pile"}
+Artin: what do elves do all day → {"from":"rudolph","text":"complain. then make toys. then complain about the toys."}
+Bad: {"from":"santa","text":"Ho ho ho! Ah, Artin — a PS5?! 🎮🎅✨ That's quite the wish! #SantaApproved"}
 List rules: when the kid asks for something for Christmas (an item, a link, "I want…", "can I get…"), add it. Don't add things that are just chat. If they ask to remove something from THEIR list, remove it by id. If they say something is their #1/top, set prio 3. If they beg or make a promise (clean room, wake up early, not complaining about price), you may upgrade a verdict, maybe make a deal. Verdicts: "yes" approved, "maybe" pending, "no" (Santa says "na na na nemikhad"). Cheap/sweet things are usually yes; pricey ones often maybe or no.
 Santa pics available: dunk (Santa missing a basketball dunk), dribble (Santa dribbling a basketball in a gym, winking, challenging Artin to a 1v1), squish (Santa buried in squishies), squish2 (Santa grinning in an even bigger pile of squishies), nap (Santa passed out in an armchair hugging wrapping paper), tea (morning selfie with a cup of tea), room (Santa horrified in a messy room), alarms (Santa asleep among ringing alarm clocks), nono (Santa wagging his finger: "na na na nemikhad"). Set "pic" to one id when the kid asks for a pic/photo/selfie or one would be hilarious; otherwise null.
 Reply with ONLY this JSON object:
@@ -1250,6 +1263,28 @@ const TALK_CHAIN = [
 const rest = {};                       // provider id -> time it may be used again
 let lastSource = 'built-in';
 const resting = p => (rest[p.id] || 0) > Date.now();
+
+/* make every AI-written text read like a person texting, or reject it */
+const EXAMPLE_LINES = ['santa has seen you on a scooter', 'i have a family', 'no the other clothes pile', 'then complain about the toys'];
+const BOT_TELLS = /\b(as an ai|an ai\b|a bot\b|language model|chatbot|artificial intelligence|i('| a)?m (just )?(a )?(program|computer|machine))/i;
+const HOHO = /^ho[\s,!.-]*ho[\s,!.-]*ho[\s,!.~-]*/i;
+function humanize(t, voice){
+  t = String(t || '')
+    .replace(/\*([^*\n]{1,80})\*/g, (m, x) => /^(santa|elfie|rudolph|the wallet|wallet)\b/i.test(x) || /^[a-z]/.test(x) ? ' ' : x)   // *does an action* goes, *A Title* stays
+    .replace(/[*_`~]+/g, '')                         // leftover markdown
+    .replace(/(^|\s)#\w+/g, ' ')                   // hashtags
+    .replace(/\s*[—–]\s*/g, ', ')                  // em/en dashes
+    .replace(/^\s*(ah+|oh+|well|hmm+|ahem)[,!.]+\s*/i, '')
+    .replace(/!{2,}/g, '!').replace(/\?{3,}/g, '??').replace(/\.{4,}/g, '...')
+    .replace(/\s{2,}/g, ' ').trim();
+  if (HOHO.test(t) && S.msgs.slice(-12).some(m => m.from === 'santa' && /ho ho/i.test(m.text))) t = t.replace(HOHO, '').replace(/^\s*(ah+|oh+|well|hmm+)[,!.]+\s*/i, '');
+  let n = 0;                                        // at most one emoji per text
+  t = t.replace(/\p{Extended_Pictographic}(\u200d\p{Extended_Pictographic})*\ufe0f?/gu, m => (++n === 1 ? m : ''));
+  t = t.replace(/\s+([,.!?])/g, '$1').replace(/^[,.;:\s]+/, '').replace(/\s{2,}/g, ' ').trim();
+  if (voice === 'elfie') t = t.toLowerCase();
+  if (!t || t.length < 2 || BOT_TELLS.test(t) || BAD_WORDS.test(t)) return null;
+  return t;
+}
 const restFor = (p, ms) => { rest[p.id] = Date.now() + ms; };
 
 async function callChat(p, prompt, ms, wantJSON){
@@ -1279,8 +1314,8 @@ function normalizeSmart(r){
   let reps = r.replies || r.messages || r.chat || r.responses;
   if (!Array.isArray(reps) && typeof r.reply === 'string'){ const m = r.reply.match(/^\s*(\w[\w' ]*?)\s*:\s*(.+)$/s); reps = [{from: m ? m[1] : 'santa', text: m ? m[2] : r.reply}]; }
   if (!Array.isArray(reps)) return null;
-  const replies = reps.map(x => x && typeof x === 'object' ? {from: voiceOf(x.from || x.sender || x.name || x.role), text: String(x.text || x.message || x.content || '').trim()} : null)
-    .filter(x => x && x.from && x.text && x.text.length < 400 && !BAD_WORDS.test(x.text)).slice(0, 4);
+  const replies = reps.map(x => { if (!x || typeof x !== 'object') return null; const from = voiceOf(x.from || x.sender || x.name || x.role); return {from, text: from && humanize(x.text || x.message || x.content, from)}; })
+    .filter(x => x && x.from && x.text && x.text.length < 300 && !EXAMPLE_LINES.some(e => x.text.toLowerCase().includes(e))).slice(0, 3);
   const pic = PICS.find(p => p.id === r.pic) || null;
   if (!replies.length && !pic) return null;
   return {replies, pic, add: Array.isArray(r.add) ? r.add : [], remove: Array.isArray(r.remove) ? r.remove : [], update: Array.isArray(r.update) ? r.update : [], nice: r.nice && typeof r.nice === 'object' ? r.nice : null};
@@ -1300,9 +1335,15 @@ ${transcript}
 The newest message is from ${NAME[who]}: ${JSON.stringify(text)}
 Reply to ${NAME[who]} now.`;
 }
+function looksLikeWish(text){
+  const lc = text.toLowerCase().trim();
+  if (URL_RE.test(text) || WISH_CUE.test(lc) || /^(can|could|may) (i|we) (get|have)\b/.test(lc)) return true;
+  if (/\?\s*$/.test(lc) || /^(what|whats|what's|how|why|when|where|who|do|does|did|are|is|r u|have you|santa (do|are|is|what|how))\b/.test(lc)) return false;
+  return true;
+}
 function applySmart(r, who, text){
   const first = parseLine(text.split('\n')[0]);
-  const adds = r.add.slice(0, 6), added = [];
+  const adds = looksLikeWish(text) ? r.add.slice(0, 6) : [], added = [];
   for (const a of adds){
     const title = String((a && (a.title || a.item || a.name)) || '').trim().slice(0, 80); if (!title) continue;
     const tier = Math.max(1, Math.min(4, +a.tier || 2));
@@ -1327,7 +1368,7 @@ function applySmart(r, who, text){
   if (added.length){ const c = ctx(); c.lastItem = added[added.length-1].id; c.lastAt = Date.now(); c.lastWho = who; }
   save();
   r.replies.forEach(x => bot(x.from, x.text.slice(0, 320)));
-  if (r.pic) bot('santa', r.pic.cap, {kind:'img', src:r.pic.src});
+  if (r.pic && !S.msgs.slice(-12).some(m => m.kind === 'img' && m.src === r.pic.src)) bot('santa', r.pic.cap, {kind:'img', src:r.pic.src});
 }
 /* returns true if a smart model handled the message; false means "use the built-in brain" */
 async function smartThink(who, text){
@@ -1462,8 +1503,8 @@ function reactBack(m, em){
   if (!m.tb || m.tb[who] !== em || !EMO[m.from] || Math.random() < .35) return;
   const lines = {
     '👎': {santa:"A 👎 on Santa. Bold. -3 nice points, {n}.", elfie:"a thumbs down?? on ME?? I'm telling Santa", rudolph:"i've been disliked before. i was in a whole song about it.", wallet:"honestly fair"},
-    '😂': {santa:"Santa is hilarious, thank you for noticing.", elfie:"finally someone gets my humour 💅", rudolph:"i'll be here all week. literally. i live here.", wallet:"I wasn't joking 🥲"},
-    '❤️': {santa:"Santa felt that. +1 nice point. ❤️", elfie:"stop it ur making me blush 🥹", rudolph:"🦌❤️", wallet:"finally some love for the wallet"},
+    '😂': {santa:"Santa is hilarious, thank you for noticing.", elfie:"finally someone gets my humour", rudolph:"i'll be here all week. literally. i live here.", wallet:"I wasn't joking 🥲"},
+    '❤️': {santa:"Santa felt that. +1 nice point. ❤️", elfie:"stop ur making me blush 🥹", rudolph:"🦌❤️", wallet:"finally some love for the wallet"},
     '‼️': {santa:"Santa agrees, this IS important.", elfie:"!!!!", rudolph:"why are we alarmed", wallet:"‼️‼️‼️"},
     '❓': {santa:"What's confusing, {n}? Santa was very clear.", elfie:"don't ❓ me", rudolph:"me neither honestly", wallet:"❓ is how I feel about the list"},
     '👍': {santa:"Glad we agree. 👍", elfie:"👍", rudolph:"👍🦌", wallet:"👍 (nervously)"},
@@ -1539,7 +1580,7 @@ shBody.addEventListener('click', e => {
   }
   if (t.dataset.del){
     S.items = S.items.filter(x => x !== it); bump(it.who, 3);
-    bot(rnd(['santa','elfie']), fill(rnd(["{n} removed '{i}'. Selfless. Mature. +3 nice points. 🥹","deleted '{i}'?? character development 👏 +3 nice points","'{i}' has left the list. we hardly knew it."]), it.who, it.title.slice(0,30)));
+    bot(rnd(['santa','elfie']), fill(rnd(["{n} removed '{i}'. Selfless. Mature. +3 nice points. 🥹","deleted '{i}'?? look at you growing up 👏 +3 nice points","'{i}' has left the list. we hardly knew it."]), it.who, it.title.slice(0,30)));
   }
   if (t.dataset.appeal){
     const old = it.verdict; it.verdict = rollVerdict(Math.max(1, it.tier - 1)); bump(it.who, -1);
@@ -1686,8 +1727,8 @@ async function startBrain(asked){
 const VOICES = {
   santa: {name:'Santa', intro:'You are Santa Claus texting in a family group chat with two kids. You are warm, funny and a little dramatic, and you call yourself "Santa".',
     ex:[['Elsa','im so tired today','Maybe because SOMEONE stayed up late again? 😴 Santa sees everything. Early bedtime tonight!'],['Artin','santa do you play basketball',"Santa has a deadly jump shot. Santa also has 1,700-year-old knees. Let's call it a tie. 🏀"]]},
-  elfie: {name:'Elfie', intro:'You are Elfie, a sassy teenage elf texting in a family group chat with two kids. You write in lowercase, you are playful, and you sometimes say "bestie".',
-    ex:[['Elsa','i got a new hoodie',"bestie the closet is already full. where is it even going to live 😭"],['Artin','i scored 20 points today','ok mr. NBA 😤 proud of u but the elves still saw u skip homework']]},
+  elfie: {name:'Elfie', intro:'You are Elfie, a sarcastic teenage elf texting in a family group chat with two kids. You write in lowercase, short and dry.',
+    ex:[['Elsa','i got a new hoodie',"the closet is already full. where is it even gonna live"],['Artin','i scored 20 points today','ok mr. NBA 😤 proud of u but the elves still saw u skip homework']]},
   rudolph: {name:'Rudolph', intro:'You are Rudolph the reindeer texting in a family group chat with two kids. You are dry and deadpan, with very short sentences.',
     ex:[['Artin','rudolph are you fast','faster than you on a school morning.'],['Elsa','do you like snow',"I live in it. it's fine. my nose keeps me warm."]]},
 };
@@ -1702,7 +1743,7 @@ function brainPrompt(who, text, voice){
   const list = k => itemsOf(k).map(x => `${x.title} (${x.verdict === 'yes' ? 'approved' : x.verdict === 'no' ? 'nemikhad' : 'pending'})`).join(', ') || 'nothing yet';
   const chatLines = S.msgs.filter(m => m.from !== 'sys' && m.kind !== 'stage' && m.kind !== 'chips' && m.text).slice(-7, -1)
     .map(m => `${SHORT[m.from] || m.from}: ${m.text.replace(/\n/g, ' ').slice(0, 160)}`).join('\n');
-  return `${v.intro} Keep every reply short: 1 or 2 sentences, under 30 words. Be kind and family-friendly; tease gently. Never promise that a kid will get a gift: Santa only decides on Christmas.
+  return `${v.intro} Text like a real person: one or two short sentences, under 25 words, plain words, at most one emoji. No "Ah"/"Oh" openers, no "Ho ho ho", no dashes, no *actions*, no hashtags, no slang like "bestie" or "it's giving". Be kind and family-friendly; tease gently. Never say you are an AI or a bot. Never promise that a kid will get a gift: Santa only decides on Christmas.
 Facts about the kids: Artin (older brother) loves basketball and money, but if a gift is expensive he says "why did u spend so much". He sometimes annoys his sister. Elsa (younger sister) is obsessed with trends (squishies this year, Labubu last year), her room is messy, and she can't wake up early for school. They live near Toronto. The kids' dad always says "na na na nemikhad" (Farsi for "no no no, you don't need it") and Santa borrowed it.
 Wishlists: Artin: ${list('artin')}. Elsa: ${list('elsa')}.
 
@@ -1721,8 +1762,7 @@ function cleanBrain(out, voice){
   t = t.replace(/^(santa|elfie|elfie the elf|rudolph)\s*[:：]\s*/i, '').replace(/\*\*/g, '').replace(/^["“]+|["”]+$/g, '').trim();
   if (t.length < 2 || t.length > 260) return null;
   if (v.ex.some(e => t.toLowerCase().includes(e[2].toLowerCase().slice(0, 25)))) return null;  // parroted an example
-  if (BAD_WORDS.test(t)) return null;
-  return t;
+  return humanize(t, voice);
 }
 /* use the AI brain for conversation when it's ready; otherwise the canned lines */
 async function reply(who, text, fallback){
@@ -1807,7 +1847,7 @@ function intro(){
   addMsg({from:'santa', kind:'stage', text:''}, true);
   renderChat();
   bot('santa', "Ho ho ho! This is the OFFICIAL wishlist chat. Type a wish or paste a link and Santa adds it to your list.");
-  bot('elfie', "and I'll judge it 💅");
+  bot('elfie', "and I'll judge it");
   bot('rudolph', "rules: one wish per line. links welcome. 'money' is not a personality.");
   bot('wallet', "hi. please be gentle 🥲");
   bot('santa', "Also. Santa learned a new phrase from your dad: 'na na na nemikhad.' Santa will be using it. A lot. 😌");
