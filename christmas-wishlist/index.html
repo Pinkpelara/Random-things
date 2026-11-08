@@ -146,6 +146,24 @@ header{
 .brainbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c62828,#2e7d32);transition:width .3s}
 .sharebox{width:100%;height:220px;border-radius:12px;border:1px solid var(--field-line);background:var(--card);color:var(--text);font:inherit;font-size:13px;padding:10px;resize:none}
 html.fam .me-btn::after{display:none}
+.convos{position:absolute;inset:0;z-index:30;background:var(--bg);overflow-y:auto;padding-top:env(safe-area-inset-top)}
+@media (min-width:700px) and (min-height:760px){.convos{padding-top:44px}}
+.convos-head{display:flex;align-items:flex-end;justify-content:space-between;padding:12px 16px 6px}
+.convos-head h1{margin:0;font-size:32px;font-weight:800}
+.convo{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 14px 10px 6px}
+.convo + .convo .convo-b{border-top:.5px solid var(--hair)}
+.convo .dot{width:10px;height:10px;border-radius:50%;background:var(--me2);flex:none}
+.convo .nodot{width:10px;flex:none}
+.convo > .av{width:52px;height:52px;font-size:26px}
+.convo-stack{position:relative;width:52px;height:52px;flex:none}
+.convo-stack .av{position:absolute;width:36px;height:36px;border:2px solid var(--bg)}
+.convo-stack .av:first-child{top:0;left:0}.convo-stack .av:last-child{bottom:0;right:0}
+.convo-b{flex:1;min-width:0;padding:4px 0}
+.convo-t{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.convo-t b{font-size:16px}.convo-t span{color:var(--muted);font-size:13px;white-space:nowrap}
+.convo-p{color:var(--muted);font-size:14px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.menu[data-kind="dm"] [data-act="idea"],.menu[data-kind="dm"] [data-act="pic"],.menu[data-kind="dm"] [data-act="tattle"]{display:none}
+#backBtn .badge[hidden]{display:none}
 .av.adult img{width:100%;height:100%;margin:0;object-fit:cover}
 .av.adult.letter{color:#fff;font-weight:700;font-size:16px;background:linear-gradient(#c79bd6,#7b4fa0)}
 .av.adult.letter.maman{background:linear-gradient(#f7a7b8,#c2185b)}
@@ -338,7 +356,7 @@ canvas#snow{position:absolute;inset:0;z-index:15;pointer-events:none}
     </button>
     <button class="group" id="groupBtn" aria-label="Group details">
       <div class="stack" id="hdrStack"></div>
-      <div class="gname"><b>🎄 Wishlist HQ</b><i>›</i></div>
+      <div class="gname"><b id="hdrTitle">🎄 Wishlist HQ</b><i>›</i></div>
     </button>
     <div class="hright">
       <button id="listBtn" aria-label="Open wishlists" title="Wishlists">
@@ -683,22 +701,24 @@ const fill = (s, who, item) => s.replace(/\{n\}/g, NAME[who] || '').replace(/\{o
 
 let q = Promise.resolve();
 function bot(from, text, extra){
+  const cid = FAM.on ? ((extra && extra.chat) || FAM.replyChat || FAM.chat) : null;
   q = q.then(() => new Promise(res => {
-    showTyping(from);
+    showTyping(from, cid);
     const d = Math.min(2300, 650 + text.length * 16) + Math.random()*350;
-    setTimeout(() => { hideTyping(); addMsg(Object.assign({from, text}, extra || {})); if (sheetOpen) banner(from, text); res(); }, d);
+    setTimeout(() => { hideTyping(); addMsg(Object.assign({from, text}, extra || {}, cid ? {chat: cid} : {})); if (sheetOpen || (FAM.on && (FAM.view === 'list' || cid !== FAM.chat))) banner(from, text, cid); res(); }, d);
   }));
   return q;
 }
-function showTyping(from){
+function showTyping(from, cid){
   hideTyping();
-  famTyping(from, 5000);
-  typingEl = document.createElement('div'); typingEl.dataset.from = from;
+  cid = cid || (FAM.on ? FAM.chat : '');
+  famTyping(from, 5000, cid);
+  typingEl = document.createElement('div'); typingEl.dataset.from = from; typingEl.dataset.chat = cid;
   typingEl.className = 'row them tail gap typing pop';
   typingEl.innerHTML = `${avHTML(from)}<div class="col"><div class="bubble"><span></span><span></span><span></span></div></div>`;
-  chat.appendChild(typingEl); scrollDown();
+  if (!FAM.on || (cid === FAM.chat && FAM.view === 'chat')){ chat.appendChild(typingEl); scrollDown(); }
 }
-function hideTyping(){ if (typingEl){ famTyping(typingEl.dataset.from, 0); typingEl.remove(); typingEl = null; } }
+function hideTyping(){ if (typingEl){ famTyping(typingEl.dataset.from, 0, typingEl.dataset.chat); typingEl.remove(); typingEl = null; } }
 function scrollDown(){ requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; }); }
 
 const fmtTime = ts => new Date(ts).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
@@ -711,8 +731,8 @@ function renderChat(newId){
   let h = '';
   let list = S.msgs;
   if (FAM.on){
-    list = S.msgs.concat(FAM.local).sort((a, b) => a.ts - b.ts);
-    list.unshift({id:'stage', from:'santa', kind:'stage', text:'', ts: list.length ? list[0].ts : Date.now()});
+    list = S.msgs.concat(FAM.local).filter(m => chatOf(m) === FAM.chat).sort((a, b) => a.ts - b.ts);
+    if (FAM.chat === 'group') list.unshift({id:'stage', from:'santa', kind:'stage', text:'', ts: list.length ? list[0].ts : Date.now()});
   }
   let lastMe = -1;
   list.forEach((m,i) => { if (m.from === me) lastMe = i; });
@@ -742,16 +762,16 @@ function renderChat(newId){
         if (onlyUrl && tbHTML(m)) inner = `<div style="position:relative">${inner}${tbHTML(m)}</div>`;
       }
     }
-    const showName = side === 'them' && first;
+    const showName = side === 'them' && first && !(FAM.on && chatKind(FAM.chat) === 'dm');
     const showAv = side === 'them' && last;
     h += `<div class="row ${side}${last && m.kind !== 'stage' ? ' tail' : ''}${first ? ' gap' : ''}${anim}">
       ${side === 'them' ? (showAv ? avHTML(m.from) : '<span class="spacer"></span>') : ''}
       <div class="col">${showName ? `<div class="who">${esc(NAME[m.from])}</div>` : ''}${inner}
-      ${i === lastMe && side === 'me' ? `<div class="receipt">Read by Santa</div>` : ''}</div></div>`;
+      ${i === lastMe && side === 'me' ? `<div class="receipt">${FAM.on && chatKind(FAM.chat) === 'dm' ? 'Delivered' : 'Read by Santa'}</div>` : ''}</div></div>`;
   });
   chat.innerHTML = h;
-  if (typingEl) chat.appendChild(typingEl);
-  if (FAM.on) renderRemoteTyping();
+  if (typingEl && (!FAM.on || typingEl.dataset.chat === FAM.chat)) chat.appendChild(typingEl);
+  if (FAM.on){ renderRemoteTyping(); if (FAM.view === 'chat'){ markRead(FAM.chat); updateBadge(); } }
   bindStage();
   scrollDown();
 }
@@ -792,6 +812,7 @@ function bindStage(){
   });
 }
 function poke(fig){
+  if (FAM.on) FAM.replyChat = 'group';
   const k = fig.dataset.kid, hw = fig.querySelector('.headwrap'), say = fig.querySelector('.say');
   hw.classList.remove('boing'); void hw.offsetWidth; hw.classList.add('boing');
   setTimeout(() => hw.classList.remove('boing'), 700);
@@ -807,22 +828,25 @@ setInterval(() => document.querySelectorAll('.countdown').forEach(e => e.textCon
    ============================================================ */
 const ta = document.getElementById('ta'), sendBtn = document.getElementById('sendBtn');
 function autosize(){ ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 120) + 'px'; sendBtn.disabled = !ta.value.trim(); }
-ta.addEventListener('input', () => { autosize(); if (FAM.on && ta.value.trim()) famTyping(FAM.me, 4000); });
+ta.addEventListener('input', () => { autosize(); if (FAM.on && ta.value.trim()) famTyping(FAM.me, 4000, FAM.chat); });
 ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); send(); } });
 sendBtn.onclick = () => { send(); ta.focus(); };
 
 function send(){
   const text = ta.value.trim(); if (!text) return;
-  const who = S.sender;
+  const who = S.sender, cid = FAM.on ? FAM.chat : null, kind = FAM.on ? chatKind(cid) : 'group';
+  if (FAM.on) FAM.replyChat = cid;
   ta.value = ''; autosize();
   const first = parseLine(text.split('\n')[0]);
   const m = {from: who, text};
   if (first.url){ m.url = first.url; m.domain = first.domain; m.linkTitle = first.title; const mm = text.match(URL_RE); m.rawUrl = mm ? mm[1].replace(/[).,!]+$/,'') : ''; }
   addMsg(m);
-  if (FAM.on) famTyping(who, 0);
-  if (isAdult(who)){ adultThink(who, text); return; }
-  if (FAM.on && talkingToPerson(who, text) && Math.random() > .3) return;   // talking to a person, not to Santa
-  smartThink(who, text).then(ok => { if (!ok) think(who, text); }, () => think(who, text));
+  if (FAM.on) famTyping(who, 0, cid);
+  if (kind === 'dm') return;                                   // a private chat between two people: Santa stays out
+  if (isAdult(who)){ adultThink(who, text, kind === 'santa'); return; }
+  if (FAM.on && kind === 'group' && talkingToPerson(who, text) && Math.random() > .3) return;   // talking to a person, not to Santa
+  const back = () => { if (FAM.on) FAM.replyChat = cid; think(who, text); };
+  smartThink(who, text).then(ok => { if (!ok) back(); }, back);
 }
 
 /* ------------------------------------------------------------
@@ -1240,6 +1264,7 @@ function think(who, text){
 chat.addEventListener('click', e => {
   const b = e.target.closest('.chip'); if (!b) return;
   const m = S.msgs.concat(FAM.local).find(x => String(x.id) === b.dataset.id); if (!m || m.used) return;
+  if (FAM.on) FAM.replyChat = chatOf(m);
   const ch = m.chips[+b.dataset.i]; m.used = true; famPatch(m, {used:true}); ctx().pending = null; save(); renderChat();
   if (ch.act === 'wish'){ addMsg({from: ch.who, text: '🎁 yes, add it'}); addWishes(ch.who, [ch.val], ch.val); }
   if (ch.act === 'brain'){ addMsg({from: S.sender, text: '🧠 yes, install it'}); startBrain(true); return; }
@@ -1418,11 +1443,11 @@ function applySmart(r, who, text){
 }
 /* returns true if a smart model handled the message; false means "use the built-in brain" */
 async function smartThink(who, text){
-  const input = smartInput(who, text), deadline = Date.now() + 20000;
-  await q; showTyping('santa');
+  const input = smartInput(who, text), deadline = Date.now() + 20000, rc = FAM.replyChat;
+  await q; showTyping('santa', rc);
   try {
     if (AI && !aiOff){
-      try { const r = normalizeSmart(await AI.json(input, {modelTier:'quick', cache:false})); if (r){ hideTyping(); applySmart(r, who, text); lastSource = 'Claude'; return true; } }
+      try { const r = normalizeSmart(await AI.json(input, {modelTier:'quick', cache:false})); if (r){ hideTyping(); FAM.replyChat = rc; applySmart(r, who, text); lastSource = 'Claude'; return true; } }
       catch(e){ if (['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(e && e.code)){ aiOff = true; document.documentElement.classList.remove('ai'); } }
     }
     if (navigator.onLine === false) return false;
@@ -1430,21 +1455,26 @@ async function smartThink(who, text){
     const avail = SMART_CHAIN.filter(p => !resting(p));
     if (!avail.length) return false;
     const win = await new Promise(resolve => {
-      let pending = avail.length, done = false;
+      let pending = avail.length, done = false, started = 0;
       const finish = r => { if (!done){ done = true; clearTimeout(cap); resolve(r); } };
       const cap = setTimeout(() => finish(null), Math.max(3000, deadline - Date.now()));
-      avail.forEach((p, i) => setTimeout(async () => {
-        if (!done){
+      const startNext = () => {
+        if (done || started >= avail.length) return;
+        const p = avail[started++];
+        const hedge = setTimeout(startNext, 4500);             // slow? ask the next one too
+        (async () => {
           try {
             const r = normalizeSmart(looseJSON(await callChat(p, input, p.ms, true)));
             if (r){ if (!done) lastSource = p.model; finish(r); } else if (!done) restFor(p, 20000);
           } catch(e){ if (!done) restFor(p, e && e.status === 429 ? 60000 : 30000); }
-        }
-        if (--pending === 0) finish(null);
-      }, i * 4500));
+          clearTimeout(hedge); startNext();                    // failed? go to the next one right away
+          if (--pending === 0) finish(null);
+        })();
+      };
+      startNext();
     });
     if (!win) return false;
-    hideTyping(); applySmart(win, who, text); return true;
+    hideTyping(); FAM.replyChat = rc; applySmart(win, who, text); return true;
   } finally { hideTyping(); }
 }
 
@@ -1454,7 +1484,8 @@ async function smartThink(who, text){
 const meBtn = document.getElementById('meBtn'), hint = document.getElementById('hint');
 function renderMe(){
   meBtn.innerHTML = avHTML(S.sender);
-  ta.placeholder = FAM.on ? (isAdult(S.sender) ? 'iMessage' : `Wish something, ${NAME[S.sender]}…`) : `Wish something, ${NAME[S.sender]}…`;
+  const ck = FAM.on ? chatKind(FAM.chat) : 'group';
+  ta.placeholder = ck === 'dm' ? `Message ${NAME[chatOther(FAM.chat)]}` : ck === 'santa' ? (isAdult(S.sender) ? 'Message Santa' : 'Tell Santa your wish…') : FAM.on && isAdult(S.sender) ? 'iMessage' : `Wish something, ${NAME[S.sender]}…`;
   if (FAM.on){ meBtn.setAttribute('aria-label', `This phone is ${NAME[S.sender]}`); return; }
   meBtn.setAttribute('aria-label', `Typing as ${NAME[S.sender]}. Tap to switch to ${NAME[other(S.sender)]}`);
 }
@@ -1473,6 +1504,7 @@ plus.onclick = e => { e.stopPropagation(); menu.classList.toggle('on'); plus.cla
 document.addEventListener('click', e => { if (!menu.contains(e.target)){ menu.classList.remove('on'); plus.classList.remove('open'); } });
 menu.onclick = async e => {
   const b = e.target.closest('button'); if (!b) return;
+  here();
   menu.classList.remove('on'); plus.classList.remove('open');
   const act = b.dataset.act;
   if (act === 'paste'){
@@ -1544,6 +1576,7 @@ function openReact(el){
     if (m.tb[S.sender] === em){ delete m.tb[S.sender]; famPatch(m, {['tb.' + S.sender]: FAM.fb ? FAM.fb.deleteField() : null}); }
     else { m.tb[S.sender] = em; famPatch(m, {['tb.' + S.sender]: em}); }
     save(); closeReact(); renderChat();
+    if (FAM.on) FAM.replyChat = chatOf(m);
     reactBack(m, em);
   };
 }
@@ -1693,17 +1726,26 @@ async function shareLists(){
 /* ============================================================
    Header, banner, misc buttons
    ============================================================ */
-function renderHeader(){ document.getElementById('hdrStack').innerHTML = avHTML('artin') + avHTML('santa','mid') + avHTML('elsa'); }
+function renderHeader(){
+  const k = FAM.on ? chatKind(FAM.chat) : 'group';
+  document.getElementById('hdrStack').innerHTML = k === 'group' ? avHTML('artin') + avHTML('santa','mid') + avHTML('elsa') : chatAv(FAM.chat, 'mid');
+  document.getElementById('hdrTitle').textContent = k === 'group' ? '🎄 Wishlist HQ' : chatTitle(FAM.chat);
+  document.getElementById('ftBtn').hidden = k === 'dm';
+  menu.dataset.kind = k;
+  updateBadge();
+}
 document.getElementById('groupBtn').onclick = openInfo;
 document.getElementById('listBtn').onclick = () => openLists(S.sender);
 document.getElementById('ftBtn').onclick = () => bot('santa', rnd(["Santa declined your FaceTime. Santa is in a meeting with the elves.","Santa doesn't do video before Dec 24. Santa's beard needs prep time.","*Santa is unavailable* (Santa is napping)"]));
-document.getElementById('backBtn').onclick = () => bot('elfie', rnd(["there is no escape from this chat 🙂","25 unread messages and you're leaving THIS chat? priorities.","where do you think you're going. we're not done judging."]));
+document.getElementById('backBtn').onclick = () => FAM.on ? showConvos() : bot('elfie', rnd(["there is no escape from this chat 🙂","25 unread messages and you're leaving THIS chat? priorities.","where do you think you're going. we're not done judging."]));
 const bannerEl = document.getElementById('banner'); let bannerT;
-function banner(from, text){
-  bannerEl.innerHTML = `${avHTML(from)}<div><b>${esc(NAME[from])}</b>${esc(text)}</div>`;
+function banner(from, text, cid){
+  bannerEl.dataset.chat = FAM.on && cid ? cid : '';
+  const where = FAM.on && cid && chatKind(cid) === 'group' ? ' · Wishlist HQ' : '';
+  bannerEl.innerHTML = `${avHTML(from)}<div><b>${esc(NAME[from])}${where}</b>${esc(text)}</div>`;
   bannerEl.classList.add('on'); clearTimeout(bannerT); bannerT = setTimeout(() => bannerEl.classList.remove('on'), 3200);
 }
-bannerEl.onclick = () => { bannerEl.classList.remove('on'); closeSheet(); };
+bannerEl.onclick = () => { bannerEl.classList.remove('on'); closeSheet(); if (bannerEl.dataset.chat) openChat(bannerEl.dataset.chat); };
 
 /* ============================================================
    Snow
@@ -1818,14 +1860,14 @@ function cleanBrain(out, voice){
 }
 /* use the AI brain for conversation when it's ready; otherwise the canned lines */
 async function reply(who, text, fallback){
-  const voice = pickVoice(text);
+  const voice = pickVoice(text), rc = FAM.replyChat;
   if (navigator.onLine !== false){
     for (const p of TALK_CHAIN){
       if (resting(p)) continue;
-      await q; showTyping(voice);
+      await q; showTyping(voice, rc);
       try {
         const out = cleanBrain(await callChat(p, brainPrompt(who, text, voice), p.ms, false), voice);
-        hideTyping();
+        hideTyping(); FAM.replyChat = rc;
         if (out){ bot(voice, out); lastSource = p.model; return; }
         restFor(p, 20000);
       } catch(e){ hideTyping(); restFor(p, e && e.status === 429 ? 60000 : 30000); }
@@ -1833,18 +1875,19 @@ async function reply(who, text, fallback){
   }
   if (brain.state === 'ready' && !brain.busy){
     brain.busy = true;
-    await q; showTyping(voice);
+    await q; showTyping(voice, rc);
     try {
       const r = await brain.engine.chat.completions.create({
         messages:[{role:'user', content: brainPrompt(who, text, voice)}], temperature: 0.8, top_p: 0.95, max_tokens: 70,
       });
       hideTyping();
       const out = cleanBrain(r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content, voice);
+      FAM.replyChat = rc;
       if (out){ bot(voice, out); lastSource = 'on-phone AI'; return; }
     } catch(e){ hideTyping(); }
     finally { brain.busy = false; }
   }
-  lastSource = 'built-in';
+  lastSource = 'built-in'; FAM.replyChat = rc;
   talk(fallback, who);
 }
 
@@ -1872,7 +1915,7 @@ const ADULTS = ['maman', 'yasi'];
 const isAdult = k => ADULTS.includes(k);
 Object.assign(NAME, {maman:'Maman', yasi:'Yasi'});
 Object.assign(SHORT, {maman:'Maman', yasi:'Yasi'});
-var FAM = {on:false, fb:null, db:null, code:null, me:null, members:{}, typing:{}, local:[], seen:new Set(), lastItems:{}, lastNice:{}, ready:false, blobs:{}};
+var FAM = {on:false, chat:'group', view:'chat', replyChat:null, fb:null, db:null, code:null, me:null, members:{}, typing:{}, local:[], seen:new Set(), lastItems:{}, lastNice:{}, ready:false, blobs:{}};
 const famCfg = () => window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId ? window.FIREBASE_CONFIG : null;
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const me = () => FAM.on ? FAM.me : S.sender;
@@ -1909,12 +1952,13 @@ async function famStart(){
   FAM.code = S.fam.code; FAM.me = S.fam.me; FAM.on = true;
   S.sender = FAM.me; document.documentElement.classList.add('fam');
   renderHeader(); renderMe();
-  fb.onSnapshot(fb.query(famCol('messages'), fb.orderBy('ts'), fb.limitToLast(300)), snap => {
+  fb.onSnapshot(fb.query(famCol('messages'), fb.orderBy('ts'), fb.limitToLast(800)), snap => {
     const fresh = new Set(), first = !FAM.ready;
-    const msgs = snap.docs.map(d => { const m = Object.assign({id:d.id}, d.data()); if (!FAM.seen.has(d.id)){ FAM.seen.add(d.id); if (!first) fresh.add(d.id); } return m; });
+    const msgs = snap.docs.map(d => { const m = Object.assign({id:d.id}, d.data()); if (!FAM.seen.has(d.id)){ FAM.seen.add(d.id); if (!first) fresh.add(d.id); } return m; }).filter(m => canSee(chatOf(m)));
     S.msgs = msgs; FAM.ready = true;
-    for (const id of fresh){ const m = msgs.find(x => x.id === id); if (m && m.by !== FAM.auth.currentUser.uid && m.from !== 'sys' && sheetOpen) banner(m.from, m.kind === 'img' && !m.text ? '📷 Photo' : m.text); }
-    renderChat(fresh);
+    for (const id of fresh){ const m = msgs.find(x => x.id === id); if (m && m.by !== FAM.auth.currentUser.uid && m.from !== 'sys' && (sheetOpen || FAM.view === 'list' || chatOf(m) !== FAM.chat)) banner(m.from, m.kind === 'img' && !m.text ? '📷 Photo' : m.text, chatOf(m)); }
+    if (FAM.view === 'chat') renderChat(fresh);
+    renderConvos(); updateBadge();
   }, () => {});
   fb.onSnapshot(famRef('state', 'main'), d => {
     const st = d.data() || {};
@@ -1939,8 +1983,9 @@ async function famStart(){
 /* what used to be local-only now goes to the family */
 function famAddMsg(m, quiet){
   m.ts = Date.now();
-  if (m.local){ m.id = 'l' + newId(); FAM.local.push(m); if (!quiet) renderChat(new Set([m.id])); return m; }
+  if (m.local){ m.id = 'l' + newId(); m.chat = m.chat || 'group'; FAM.local.push(m); if (!quiet) renderChat(new Set([m.id])); return m; }
   const id = newId(); m.id = id; m.by = FAM.auth.currentUser ? FAM.auth.currentUser.uid : '';
+  m.chat = m.chat || FAM.replyChat || FAM.chat;
   const data = {}; for (const k in m) if (m[k] !== undefined && k !== 'id') data[k] = m[k];
   FAM.fb.setDoc(famRef('messages', id), data).catch(() => {});
   return m;
@@ -1958,18 +2003,19 @@ function famPush(){
   FAM.fb.updateDoc(famRef('state', 'main'), upd).catch(() => {});
 }
 let typingSent = 0;
-function famTyping(who, ms){
-  if (!FAM.on) return;
+function famTyping(who, ms, cid){
+  if (!FAM.on || !FAM.fb) return;
   if (ms && who === FAM.me && Date.now() - typingSent < 2500) return;
   if (who === FAM.me) typingSent = ms ? Date.now() : 0;
-  FAM.fb.setDoc(famRef('typing', who), {until: ms ? Date.now() + ms : 0}).catch(() => {});
+  FAM.fb.setDoc(famRef('typing', (cid || FAM.chat) + '~' + who), {until: ms ? Date.now() + ms : 0}).catch(() => {});
 }
 function renderRemoteTyping(){
   if (!FAM.on) return;
   let box = document.getElementById('rtyping');
   if (!box){ box = document.createElement('div'); box.id = 'rtyping'; }
   const now = Date.now();
-  const who = Object.keys(FAM.typing).filter(k => k !== FAM.me && FAM.typing[k] > now && !(typingEl && typingEl.dataset.from === k));
+  const who = Object.keys(FAM.typing).filter(key => { const [c, k] = key.split('~'); return k && c === FAM.chat && k !== FAM.me && FAM.typing[key] > now && !(typingEl && typingEl.dataset.from === k && typingEl.dataset.chat === c); }).map(key => key.split('~')[1]);
+  if (FAM.view !== 'chat'){ box.innerHTML = ''; return; }
   box.innerHTML = who.map(k => `<div class="row them tail gap typing">${avHTML(k)}<div class="col"><div class="who">${esc(NAME[k] || k)}</div><div class="bubble"><span></span><span></span><span></span></div></div></div>`).join('');
   if (box.parentNode !== chat || box !== chat.lastElementChild) chat.appendChild(box);
   if (who.length) scrollDown();
@@ -1994,12 +2040,14 @@ function pickPhoto(){
   });
 }
 async function sendPhoto(){
+  here(); const cid = FAM.on ? FAM.chat : null;
   const f = await pickPhoto(); if (!f) return;
+  if (FAM.on) FAM.replyChat = cid;
   let src = await shrinkPhoto(f, FAM.on ? 1080 : 720, .72);
   if (src.length > 850000) src = await shrinkPhoto(f, 800, .6);
   const who = me();
   addMsg({from: who, kind:'img', src, text:''});
-  if (Math.random() < .55) talk([fresh1(isAdult(who) ? PHOTO_ADULT : PHOTO_KID)], who);
+  if ((!FAM.on || chatKind(cid) !== 'dm') && Math.random() < .55) talk([fresh1(isAdult(who) ? PHOTO_ADULT : PHOTO_KID)], who);
 }
 const PHOTO_KID = [
   ['elfie', "pic received. the elves are zooming in 🔍"], ['santa', "Santa saved that one. Santa saves everything."],
@@ -2042,12 +2090,11 @@ function talkingToPerson(who, text){
   const people = {artin:/\bartin\b/, elsa:/\belsa\b/, maman:/\b(maman|mom|mommy|mama)\b/, yasi:/\b(yasi|aunt|khale)\b/};
   return Object.keys(people).some(k => k !== who && people[k].test(lc));
 }
-function adultThink(who, text){
-  const lc = text.toLowerCase();
-  const named = /\b(santa|elfie|elf|rudolph|wallet)\b/.test(lc);
-  const toKid = /\b(artin|elsa)\b/.test(lc) && !named;
-  if (Math.random() > (named ? 1 : toKid ? .35 : .75)) return;
-  smartThink(who, text).then(ok => { if (!ok) adultCanned(who, text); }, () => adultCanned(who, text));
+function adultThink(who, text, always){
+  // Santa always answers Maman and Yasi, unless they're clearly talking to someone else in the group
+  if (!always && talkingToPerson(who, text) && Math.random() > .4) return;
+  const rc = FAM.replyChat, back = () => { FAM.replyChat = rc; adultCanned(who, text); };
+  smartThink(who, text).then(ok => { if (!ok) back(); }, back);
 }
 
 /* ---------- setup: family code + who's this phone ---------- */
@@ -2132,6 +2179,72 @@ function famLeave(){
   location.reload();
 }
 
+/* ---------- conversations: the family group, a private chat with Santa, and 1-to-1 chats ---------- */
+const chatOf = m => (m && m.chat) || 'group';
+const dmId = (a, b) => 'dm:' + [a, b].sort().join('_');
+const santaChat = who => 'santa:' + who;
+const chatKind = c => !c || c === 'group' ? 'group' : c.startsWith('santa:') ? 'santa' : 'dm';
+function chatOther(c){ if (chatKind(c) !== 'dm') return null; const [a, b] = c.slice(3).split('_'); return a === FAM.me ? b : a; }
+function myChats(){ return ['group', santaChat(FAM.me)].concat(PEOPLE.filter(p => p !== FAM.me).map(p => dmId(FAM.me, p))); }
+function canSee(c){
+  const k = chatKind(c);
+  if (k === 'group') return true;
+  if (k === 'santa') return c === santaChat(FAM.me);
+  return c.slice(3).split('_').includes(FAM.me);
+}
+function chatTitle(c){ const k = chatKind(c); return k === 'group' ? '🎄 Wishlist HQ' : k === 'santa' ? 'Santa' : NAME[chatOther(c)] || ''; }
+function chatAv(c, cls){ const k = chatKind(c); return k === 'group' ? avHTML('santa', cls) : k === 'santa' ? avHTML('santa', cls) : avHTML(chatOther(c), cls); }
+const chatMsgs = c => S.msgs.filter(m => chatOf(m) === c);
+function unread(c){ const r = (S.fam.read || {})[c] || 0; return chatMsgs(c).filter(m => m.ts > r && m.from !== FAM.me && m.from !== 'sys').length; }
+function markRead(c){
+  const ms = chatMsgs(c); const last = ms.length ? ms[ms.length - 1].ts : 0;
+  S.fam.read = S.fam.read || {};
+  if ((S.fam.read[c] || 0) < last){ S.fam.read[c] = last; save(); }
+}
+function updateBadge(){
+  const el = document.querySelector('#backBtn .badge'); if (!el) return;
+  if (!FAM.on){ el.textContent = '25'; el.hidden = false; return; }
+  const n = myChats().filter(c => c !== FAM.chat || FAM.view === 'list').reduce((s, c) => s + unread(c), 0);
+  el.textContent = n; el.hidden = !n;
+}
+const here = () => { if (FAM.on) FAM.replyChat = FAM.chat; };
+
+let convosEl = null;
+function showConvos(){
+  FAM.view = 'list';
+  if (!convosEl){
+    convosEl = document.createElement('section'); convosEl.className = 'convos'; convosEl.id = 'convos';
+    document.getElementById('phone').appendChild(convosEl);
+    convosEl.addEventListener('click', e => { const r = e.target.closest('[data-chat]'); if (r) openChat(r.dataset.chat); });
+  }
+  convosEl.hidden = false; renderConvos(); updateBadge();
+}
+function renderConvos(){
+  if (!convosEl || FAM.view !== 'list') return;
+  const rows = myChats().map(c => {
+    const ms = chatMsgs(c).filter(m => m.from !== 'sys'), last = ms[ms.length - 1];
+    const other = chatOther(c), joined = !other || FAM.members[other];
+    const prev = last ? (last.from === FAM.me ? 'You: ' : chatKind(c) === 'group' ? (SHORT[last.from] || '') + ': ' : '') + (last.kind === 'img' && !last.text ? '📷 Photo' : last.text)
+      : chatKind(c) === 'santa' ? 'Your private chat with Santa 🎅' : chatKind(c) === 'group' ? 'Everyone in one chat' : joined ? 'Say hi 👋' : "Hasn't joined yet";
+    return {c, last, prev, n: unread(c)};
+  });
+  const pinned = rows.slice(0, 2), people = rows.slice(2).sort((a, b) => (b.last ? b.last.ts : 0) - (a.last ? a.last.ts : 0));
+  const row = r => `<button class="convo" data-chat="${r.c}">
+      ${r.n ? '<i class="dot"></i>' : '<i class="nodot"></i>'}
+      ${chatKind(r.c) === 'group' ? `<span class="convo-stack">${avHTML('artin')}${avHTML('elsa')}</span>` : chatAv(r.c)}
+      <div class="convo-b"><div class="convo-t"><b>${esc(chatTitle(r.c))}</b><span>${r.last ? esc(fmtShort(r.last.ts)) : ''} ›</span></div>
+      <div class="convo-p">${esc(r.prev).slice(0, 120)}</div></div></button>`;
+  convosEl.innerHTML = `<div class="convos-head"><span></span><h1>Messages</h1><span class="small">${esc(NAME[FAM.me])}</span></div>
+    <div class="convos-list">${pinned.map(row).join('')}${people.map(row).join('')}</div>`;
+}
+function fmtShort(ts){ const d = new Date(ts), t = new Date(); return d.toDateString() === t.toDateString() ? fmtTime(ts) : d.toLocaleDateString([], {weekday:'short'}); }
+function openChat(c){
+  FAM.chat = c; FAM.view = 'chat';
+  if (convosEl) convosEl.hidden = true;
+  closeSheet();
+  renderHeader(); renderMe(); renderChat(); markRead(c); updateBadge();
+}
+
 /* ============================================================
    Home-screen app
    ============================================================ */
@@ -2143,7 +2256,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localh
 function offerInstall(){
   if (isStandalone() || S.installOffered || window.claude) return;
   S.installOffered = true; save();
-  bot('elfie', "pro tip: put this chat on your home screen so Santa's always one tap away 📲", {kind:'chips', local:true, chips:[{label:'📲 Show me how', act:'install'}, {label:'Later', act:'later'}]});
+  bot('elfie', "pro tip: put this chat on your home screen so Santa's always one tap away 📲", {kind:'chips', local:true, chat:'group', chips:[{label:'📲 Show me how', act:'install'}, {label:'Later', act:'later'}]});
 }
 async function showInstall(){
   if (installPrompt){ installPrompt.prompt(); try { await installPrompt.userChoice; } catch(e){} installPrompt = null; return; }
@@ -2193,7 +2306,7 @@ function intro(){
 })();
 renderHeader(); renderMe(); autosize(); snow.toggle(S.snow);
 if (famCfg()){
-  if (S.fam && S.fam.code && S.fam.me){ famStart().catch(() => {}); if (!S.installOffered) setTimeout(offerInstall, 4000); }
+  if (S.fam && S.fam.code && S.fam.me){ FAM.me = S.fam.me; famStart().then(showConvos).catch(() => {}); if (!S.installOffered) setTimeout(offerInstall, 4000); }
   else showSetup('code');
 }
 else if (!S.msgs.length) intro();
